@@ -23,7 +23,15 @@ class UserFiles:
     '''
 
     REMOVE_FILE_QUERY = '''
-        DELETE FROM Files WHERE Owner = ? AND Name = ?;
+        DELETE FROM Files WHERE Owner = ? AND Name = ? AND Folder = ?;
+    '''
+
+    REMOVE_FOLDER_QUERY = '''
+        DELETE FROM Files WHERE Owner = ? AND Folder = ?;
+    '''
+
+    GET_FOLDER_DATA_QUERY = '''
+        SELECT Name FROM Files WHERE Owner = ? AND Folder = ?;
     '''
 
     GET_FILE_DATA_QUERY = '''
@@ -85,8 +93,12 @@ class UserFiles:
             formatted_details.append((name, size, date, favorite, folder))
         return formatted_details if formatted_details else "<NO_DATA>"
 
-    def delete_file(self, name: str):
-        self._execute_query(self.REMOVE_FILE_QUERY, (self.userid_db, name))
+    def delete_file(self, name: str, folder: str):
+        self._execute_query(self.REMOVE_FILE_QUERY, (self.userid_db, name, folder,))
+        self.conn.commit()
+
+    def delete_folder(self, folder: str):
+        self._execute_query(self.REMOVE_FOLDER_QUERY, (self.userid_db, folder,))
         self.conn.commit()
 
     def rename_file(self, old_name: str, new_name: str):
@@ -113,9 +125,18 @@ class UserFiles:
         folder = self._execute_query(self.GET_FOLDER_QUERY, (self.userid_db, file_name))
         return folder[0] if folder else None
 
+    def get_folder_data(self, folder: str):
+        data = self._execute_query(self.GET_FOLDER_DATA_QUERY, (self.userid_db, folder))
+        return [name[0] for name in data]
+
     def set_folder(self, file_name: str, folder: str):
         self._execute_query(self.SET_FOLDER_QUERY, (folder, self.userid_db, file_name))
         self.conn.commit()
 
     def close_connection(self):
         self.conn.close()
+
+
+if __name__ == '__main__':
+    db_manager = UserFiles('1')
+    print(db_manager.get_folder_data("fd1"))

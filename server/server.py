@@ -353,18 +353,37 @@ class Server:
         except Exception as e:
             print(f"Error in handle_read_files_action: {e}")
 
-    def handle_delete_file_action(self, client_socket, db_manager, select_file_names_lst):
+    def handle_delete_file_action(self, client_socket, db_manager, delete_data):
         try:
+            folder_names_lst = delete_data[0]
+            file_names_lst = delete_data[1]
+            current_folder = delete_data[2]
+
             if isinstance(db_manager, GroupFiles):
-                for individual_file in select_file_names_lst:
+                for individual_file in file_names_lst:
                     db_manager.delete_file(self.get_group_name(client_socket), individual_file)
                     queued_info = {"FLAG": "<DELETE>", "DATA": individual_file}
 
                     self.file_queue.put((client_socket, queued_info))
 
             elif isinstance(db_manager, UserFiles):
-                for individual_file in select_file_names_lst:
-                    db_manager.delete_file(individual_file)
+                for individual_file in file_names_lst:
+                    db_manager.delete_file(individual_file, current_folder)
+                for individual_folder in folder_names_lst:
+                    def delete_folder_recursive(current_folder, folder_name):
+                        all_files = db_manager.get_folder_data(folder_name)
+                        print(f"all_files: {all_files}")
+                        if len(all_files) == 0:
+                            return
+                        for files_in_folder in all_files:
+                            print(files_in_folder)
+                            if " <folder>" in files_in_folder:
+                                delete_folder_recursive(folder_name, files_in_folder.replace(" <folder>", ""))
+                            db_manager.delete_file(files_in_folder, folder_name)
+
+
+                    delete_folder_recursive(current_folder, individual_folder.replace(" <folder>", ""))
+                    db_manager.delete_file(individual_folder, current_folder)
             print("Files deleted successfully.")
 
         except Exception as e:

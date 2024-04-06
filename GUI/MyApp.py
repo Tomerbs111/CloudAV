@@ -156,7 +156,7 @@ class Page(ttk.Frame):
         menu.add_separator()
         menu.add_command(label=" Upload File", image=file_icon, compound=tk.LEFT, command=self.handle_send_file_request,
                          font=("Arial", 14))
-        menu.add_command(label=" Upload Folder", image=upload_folder_icon, compound=tk.LEFT,
+        menu.add_command(label=" Upload Folder", image=upload_folder_icon, compound=tk.LEFT, command=self.handle_upload_folder_request,
                          font=("Arial", 14))
 
         x = self.f_options.winfo_rootx() + self.add_button.winfo_x()
@@ -218,16 +218,33 @@ class Page(ttk.Frame):
         cancel_button = CTkButton(self.add_folder_dialog, text="Cancel", command=self.add_folder_dialog.destroy)
         cancel_button.pack(pady=10, padx=10, side="left", anchor="w")
 
+        # Center the dialog on the screen
+        self.add_folder_dialog.update_idletasks()
+        width = self.add_folder_dialog.winfo_width()
+        height = self.add_folder_dialog.winfo_height()
+        x = (self.add_folder_dialog.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.add_folder_dialog.winfo_screenheight() // 2) - (height // 2)
+        self.add_folder_dialog.geometry('{}x{}+{}+{}'.format(width, height, x, y))
+
+        # Focus on the add_folder_dialog window
+        self.add_folder_dialog.focus_set()
+
     def handle_add_new_folder_request(self):
-        folder_name = self.folder_name_entry.get() + " folder"
-        if folder_name:
-            self.current_frame.handle_add_new_folder_request(folder_name)
+        folder_name = self.folder_name_entry.get().strip()
+        if not folder_name:
+            folder_name = "New Folder"
+        check_dup = self.current_frame.handle_duplicate_names(folder_name)
+        if check_dup != folder_name:
+            self.current_frame.handle_add_new_folder_request(check_dup + " <folder>")
         else:
-            self.current_frame.handle_add_new_folder_request("New Folder")
+            self.current_frame.handle_add_new_folder_request(folder_name + " <folder>")
         self.add_folder_dialog.destroy()
 
     def handle_send_file_request(self):
         threading.Thread(target=self.current_frame.handle_send_file_request).start()
+
+    def handle_upload_folder_request(self):
+        threading.Thread(target=self.current_frame.handle_folder_upload).start()
 
 
     def handle_create_group_window(self):

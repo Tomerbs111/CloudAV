@@ -115,8 +115,8 @@ class ClientCommunication:
         except Exception as e:
             print(f"Error in handle_presaved_files_client: {e}")
 
-    def handle_delete_request_client(self, select_file_names_lst):
-        data_dict = {"FLAG": '<DELETE>', "DATA": select_file_names_lst}
+    def handle_delete_request_client(self, select_file_names_lst, folders_to_delete, current_folder):
+        data_dict = {"FLAG": '<DELETE>', "DATA": [folders_to_delete, select_file_names_lst, current_folder]}
         self.send_data(self.client_socket, pickle.dumps(data_dict))
         print("Files deleted successfully.")
 
