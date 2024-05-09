@@ -459,12 +459,20 @@ class GroupsPage(ttk.Frame):
 
     def handle_delete_request_group(self):
         frames_to_delete = self.get_checked_file_frames()
-        names_to_delete_lst = [file_frame.get_filename() for file_frame in frames_to_delete]
+        names_to_delete_lst = []
+        folders_to_delete_lst = []
 
-        self.delete_thread = threading.Thread(
+        for file_frame in frames_to_delete:
+            if file_frame.is_folder:
+                folders_to_delete_lst.append(file_frame.get_filename() + " <folder>")
+            else:
+                names_to_delete_lst.append(file_frame.get_filename())
+
+        delete_thread = threading.Thread(
             target=self.group_communicator.handle_delete_request_group,
-            args=(names_to_delete_lst,)
+            args=(names_to_delete_lst, folders_to_delete_lst, self.get_current_folder())
         ).start()
+
         for file_frame in frames_to_delete:
             file_frame.kill_frame()
 
@@ -506,7 +514,6 @@ class GroupsPage(ttk.Frame):
 
             protocol_flag = data.get("FLAG")
             received_data = data.get("DATA")
-            print("received_data", received_data)
 
             if protocol_flag == "<SEND>":
                 for item in received_data:
@@ -520,7 +527,6 @@ class GroupsPage(ttk.Frame):
                 self.get_and_destroy_checked_file_names(received_data)
 
             elif protocol_flag == "<RECV>":
-                print("received_data", received_data)
                 self.handle_saving_broadcasted_files(received_data, self.save_path)
 
             elif protocol_flag == "<RENAME>":

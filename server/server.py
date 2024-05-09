@@ -368,7 +368,7 @@ class Server:
 
             if isinstance(db_manager, GroupFiles):
                 for individual_file in file_names_lst:
-                    db_manager.delete_file(self.get_group_name(client_socket), individual_file)
+                    db_manager.delete_file(self.get_group_name(client_socket), individual_file, current_folder)
                     queued_info = {"FLAG": "<DELETE>", "DATA": individual_file}
 
                     self.file_queue.put((client_socket, queued_info))
