@@ -314,7 +314,7 @@ class GroupsPage(ttk.Frame):
 
         add_folder_thread = threading.Thread(target=self.group_communicator.handle_add_new_folder_request,
                                              args=(
-                                             folder_name, folder_size, folder_date, folder_folder, self.group_name))
+                                                 folder_name, folder_size, folder_date, folder_folder, self.group_name))
         add_folder_thread.start()
 
         self.add_folder_frame(real_folder_name, folder_size, formatted_folder_date, self.owner)
@@ -563,6 +563,7 @@ class GroupsPage(ttk.Frame):
 
     def handle_folder_upload(self):
         try:
+            count = 0
             folder_path = fd.askdirectory(title='Select a folder')
             if folder_path:
                 paths = self.get_files_and_subdirectories(folder_path)
@@ -578,7 +579,7 @@ class GroupsPage(ttk.Frame):
                         send_folder_thread = threading.Thread(
                             target=self.group_communicator.handle_add_new_folder_request,
                             args=(
-                                folder_name, folder_size, folder_date, os.path.basename(os.path.dirname(path)))
+                                folder_name, folder_size, folder_date, os.path.basename(os.path.dirname(path)), self.group_name)
                         )
                         send_folder_thread.start()
                     else:  # If it's a file
@@ -598,6 +599,8 @@ class GroupsPage(ttk.Frame):
                         send_file_thread.start()
 
                         favorite = 0
+
+                    count += 1
 
                 self.handle_add_new_folder_request(os.path.basename(folder_path) + " <folder>")
 

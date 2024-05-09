@@ -240,9 +240,9 @@ class GroupCommunication:
             if on_broadcast_callback:
                 on_broadcast_callback(received_data)
 
-    def handle_add_new_folder_request(self, real_folder_name, folder_size, folder_date, folder_folder, folder_owner):
+    def handle_add_new_folder_request(self, real_folder_name, folder_size, folder_date, folder_folder, group_name):
         data_dict = {"FLAG": '<CREATE_FOLDER_GROUP>',
-                     "DATA": [real_folder_name, folder_size, folder_date, folder_folder, folder_owner]}
+                     "DATA": [real_folder_name, folder_size, folder_date, folder_folder, group_name]}
         self.send_data(self.client_socket, pickle.dumps(data_dict))
 
         print(f"Folder '{real_folder_name}' created successfully")
