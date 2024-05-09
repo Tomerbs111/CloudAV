@@ -318,7 +318,7 @@ class Server:
 
             if isinstance(db_manager, GroupFiles):
                 group_name = self.get_group_name(client_socket)
-                db_manager.insert_file(file_name, file_size, file_date, group_name,file_folder ,file_bytes)
+                db_manager.insert_file(file_name, file_size, file_date, group_name, file_folder, file_bytes)
 
                 file_info = self.get_file_info(db_manager, group_name, file_name, file_folder)
                 queued_info = {"FLAG": "<SEND>", "DATA": file_info}
@@ -342,7 +342,8 @@ class Server:
             file_data_name_dict = {}
             if isinstance(db_manager, GroupFiles):
                 for individual_file in select_file_names_lst:
-                    file_data = db_manager.get_file_data(self.get_group_name(client_socket), individual_file, folder_name)[0]
+                    file_data = \
+                    db_manager.get_file_data(self.get_group_name(client_socket), individual_file, folder_name)[0]
                     file_data_name_dict[individual_file] = file_data
 
 
@@ -350,7 +351,6 @@ class Server:
                 for individual_file in select_file_names_lst:
                     file_data = db_manager.get_file_data(individual_file, folder_name)[0]
                     file_data_name_dict[individual_file] = file_data
-
 
             data_dict = {"FLAG": '<RECV>', "DATA": file_data_name_dict}
             self.send_data(client_socket, pickle.dumps(data_dict))
@@ -361,53 +361,59 @@ class Server:
             print(f"Error in handle_read_files_action: {e}")
 
     def handle_delete_file_action(self, client_socket, db_manager, delete_data):
-        folder_names_lst = delete_data[0]
-        file_names_lst = delete_data[1]
-        current_folder = delete_data[2]
+        try:
 
-        if isinstance(db_manager, GroupFiles):
-            for individual_file in file_names_lst:
-                db_manager.delete_file(self.get_group_name(client_socket), individual_file, current_folder)
-                queued_info = {"FLAG": "<DELETE>", "DATA": individual_file}
-                self.file_queue.put((client_socket, queued_info))
+            folder_names_lst = delete_data[0]
+            file_names_lst = delete_data[1]
+            current_folder = delete_data[2]
 
-            for individual_folder in folder_names_lst:
-                def delete_folder_recursive(current_folder, folder_name):
-                    all_files = db_manager.get_name_file_from_folder_group(self.get_group_name(client_socket), folder_name)
-                    print(f"all_files: {all_files}")
-                    if len(all_files) == 0:
-                        return
-                    for files_in_folder in all_files:
-                        print(files_in_folder)
-                        if " <folder>" in files_in_folder:
-                            delete_folder_recursive(folder_name, files_in_folder.replace(" <folder>", ""))
-                        db_manager.delete_file(self.get_group_name(client_socket), files_in_folder, folder_name)
-                        queued_info = {"FLAG": "<DELETE>", "DATA": files_in_folder}
-                        self.file_queue.put((client_socket, queued_info))
+            if isinstance(db_manager, GroupFiles):
+                for individual_file in file_names_lst:
+                    db_manager.delete_file(self.get_group_name(client_socket), individual_file, current_folder)
+                    queued_info = {"FLAG": "<DELETE>", "DATA": individual_file}
+                    self.file_queue.put((client_socket, queued_info))
 
-                delete_folder_recursive(current_folder, individual_folder.replace(" <folder>", ""))
-                db_manager.delete_file(self.get_group_name(client_socket), individual_folder, current_folder)
+                for individual_folder in folder_names_lst:
+                    def delete_folder_recursive(current_folder, folder_name):
+                        all_files = db_manager.get_name_file_from_folder_group(self.get_group_name(client_socket),
+                                                                               folder_name)
+                        print(f"all_files: {all_files}")
+                        if len(all_files) == 0:
+                            return
+                        for files_in_folder in all_files:
+                            print(files_in_folder)
+                            if " <folder>" in files_in_folder:
+                                delete_folder_recursive(folder_name, files_in_folder.replace(" <folder>", ""))
+                            db_manager.delete_file(self.get_group_name(client_socket), files_in_folder, folder_name)
+                            queued_info = {"FLAG": "<DELETE>", "DATA": files_in_folder}
+                            self.file_queue.put((client_socket, queued_info))
 
-
-        elif isinstance(db_manager, UserFiles):
-            for individual_file in file_names_lst:
-                db_manager.delete_file(individual_file, current_folder)
-            for individual_folder in folder_names_lst:
-                def delete_folder_recursive(current_folder, folder_name):
-                    all_files = db_manager.get_folder_data(folder_name)
-                    print(f"all_files: {all_files}")
-                    if len(all_files) == 0:
-                        return
-                    for files_in_folder in all_files:
-                        print(files_in_folder)
-                        if " <folder>" in files_in_folder:
-                            delete_folder_recursive(folder_name, files_in_folder.replace(" <folder>", ""))
-                        db_manager.delete_file(files_in_folder, folder_name)
+                    delete_folder_recursive(current_folder, individual_folder.replace(" <folder>", ""))
+                    db_manager.delete_file(self.get_group_name(client_socket), individual_folder, current_folder)
 
 
-                delete_folder_recursive(current_folder, individual_folder.replace(" <folder>", ""))
-                db_manager.delete_file(individual_folder, current_folder)
-        print("Files deleted successfully.")
+            elif isinstance(db_manager, UserFiles):
+                for individual_file in file_names_lst:
+                    db_manager.delete_file(individual_file, current_folder)
+                for individual_folder in folder_names_lst:
+                    def delete_folder_recursive(current_folder, folder_name):
+                        all_files = db_manager.get_folder_data(folder_name)
+                        print(f"all_files: {all_files}")
+                        if len(all_files) == 0:
+                            return
+                        for files_in_folder in all_files:
+                            print(files_in_folder)
+                            if " <folder>" in files_in_folder:
+                                delete_folder_recursive(folder_name, files_in_folder.replace(" <folder>", ""))
+                            db_manager.delete_file(files_in_folder, folder_name)
+
+                    delete_folder_recursive(current_folder, individual_folder.replace(" <folder>", ""))
+                    db_manager.delete_file(individual_folder, current_folder)
+            print("Files deleted successfully.")
+
+        except Exception as e:
+            print(f"Error in handle_delete_action: {e}")
+            client_socket.close()
 
     def handle_rename_file_action(self, client_socket, db_manager, rename_data):
         try:
@@ -476,7 +482,6 @@ class Server:
             room_manager = RoomManager()
 
             rooms_containing_user = room_manager.get_rooms_by_participant(user_email)
-
 
             # Create a dictionary with room names as keys and permissions as values
             rooms_dict = {}

@@ -520,8 +520,8 @@ class GroupsPage(ttk.Frame):
 
             if protocol_flag == "<SEND>":
                 for item in received_data:
-                    owner, name, size, date, group_name = item
-                    self.add_file_frame(name, self.set_size_format(size), date, owner)
+                    owner, name, size, date, group_name, folder = item
+                    self.add_file_frame(name, self.set_size_format(size), self.set_date_format(pickle.loads(date)), owner)
 
             elif protocol_flag == "<NARF>":
                 self.handle_presenting_presaved_files(received_data)
