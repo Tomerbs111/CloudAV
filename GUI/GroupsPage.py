@@ -497,7 +497,7 @@ class GroupsPage(ttk.Frame):
 
                 rename_thread = threading.Thread(
                     target=self.group_communicator.handle_rename_request_group,
-                    args=((old_name, new_name_with_format),))
+                    args=([old_name, new_name_with_format, self.get_current_folder()],))
                 rename_thread.start()
 
                 file_frame.set_filename(new_name_with_format)

@@ -417,11 +417,13 @@ class Server:
 
     def handle_rename_file_action(self, client_socket, db_manager, rename_data):
         try:
-            old_name, new_name = rename_data
+            old_name = rename_data[0]
+            new_name = rename_data[1]
+            file_folder = rename_data[2]
 
             if isinstance(db_manager, GroupFiles):
                 group_name = self.get_group_name(client_socket)
-                db_manager.rename_file(group_name, old_name, new_name)
+                db_manager.rename_file(group_name, old_name, new_name, file_folder)
                 queued_info = {"FLAG": "<RENAME>", "DATA": rename_data}
 
                 self.file_queue.put((client_socket, queued_info))
