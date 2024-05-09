@@ -71,7 +71,6 @@ class GroupFileFrame(ttk.Frame):
         self.lu_filename.pack(side='left', padx=(0, 5), pady=5, anchor='w')
         self.lu_filename.bind("<Button-1>", self.on_click)  # Bind left mouse button click event
 
-
         self.lu_size = ttk.Label(
             master=self,
             text=self.file_size,
@@ -314,14 +313,16 @@ class GroupsPage(ttk.Frame):
         formatted_folder_date = self.set_date_format(folder_date)
 
         add_folder_thread = threading.Thread(target=self.group_communicator.handle_add_new_folder_request,
-                                             args=(folder_name, folder_size, folder_date, folder_folder, self.group_name))
+                                             args=(
+                                             folder_name, folder_size, folder_date, folder_folder, self.group_name))
         add_folder_thread.start()
 
         self.add_folder_frame(real_folder_name, folder_size, formatted_folder_date, self.owner)
 
     def add_folder_frame(self, real_folder_name, folder_size, folder_date, group_folder_owner):
-        file_frame = GroupFileFrame(self.f_file_list, real_folder_name, folder_size, folder_date, group_folder_owner, is_folder=True,
-                               click_callback=self.folder_clicked)
+        file_frame = GroupFileFrame(self.f_file_list, real_folder_name, folder_size, folder_date, group_folder_owner,
+                                    is_folder=True,
+                                    click_callback=self.folder_clicked)
         file_frame.pack(expand=True, fill='x', side='top')
         self.group_file_frames.append(file_frame)
         self.file_frame_counter += 1
@@ -363,7 +364,6 @@ class GroupsPage(ttk.Frame):
         # run handle_presaved_files_group, answer will be picked by handle_broadcast_requests
         self.group_communicator.handle_presaved_files_group(folder_name)
 
-
     def get_checked_file_frames(self):
         checked_file_frames_list = []
         for file_frame in self.group_file_frames:
@@ -398,8 +398,6 @@ class GroupsPage(ttk.Frame):
                 file_frame.update_idletasks()
 
     def handle_presenting_presaved_files(self, narf_answer):
-        print("now in this idiottotewjhkjshf")
-        print(narf_answer)
         if narf_answer == "<NO_DATA>":
             return
         for individual_file in narf_answer:
@@ -412,7 +410,6 @@ class GroupsPage(ttk.Frame):
                 self.add_folder_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner)
             else:
                 self.add_file_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner)
-
 
     def handle_send_file_request(self):
         filetypes = (
@@ -444,9 +441,13 @@ class GroupsPage(ttk.Frame):
         select_file_frames = self.get_checked_file_frames()
         select_file_names_lst = [file_frame.get_filename() for file_frame in select_file_frames]
 
+        print(f"select_file_frames: {select_file_frames}")
+        print(f"select_file_names_lst: {select_file_names_lst}")
+        print(f"self.get_current_folder(): {self.get_current_folder()}")
+
         receive_thread = threading.Thread(
             target=self.group_communicator.handle_download_request_group,
-            args=(select_file_names_lst,self.save_path, self.get_current_folder()))
+            args=(select_file_names_lst, self.save_path, self.get_current_folder()))
         receive_thread.start()
 
     def handle_saving_broadcasted_files(self, file_data_name_dict, save_path):
@@ -519,6 +520,7 @@ class GroupsPage(ttk.Frame):
                 self.get_and_destroy_checked_file_names(received_data)
 
             elif protocol_flag == "<RECV>":
+                print("received_data", received_data)
                 self.handle_saving_broadcasted_files(received_data, self.save_path)
 
             elif protocol_flag == "<RENAME>":

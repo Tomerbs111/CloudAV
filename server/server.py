@@ -342,7 +342,7 @@ class Server:
             file_data_name_dict = {}
             if isinstance(db_manager, GroupFiles):
                 for individual_file in select_file_names_lst:
-                    file_data = db_manager.get_file_data(self.get_group_name(client_socket), individual_file)[0]
+                    file_data = db_manager.get_file_data(self.get_group_name(client_socket), individual_file, folder_name)[0]
                     file_data_name_dict[individual_file] = file_data
 
 

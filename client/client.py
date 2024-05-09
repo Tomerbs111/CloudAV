@@ -267,6 +267,9 @@ class GroupCommunication:
             data_dict = {"FLAG": '<RECV>', "DATA": [select_file_names_lst, file_folder]}
             self.send_data(self.client_socket, pickle.dumps(data_dict))
 
+            if self.running:  # Check if data will end up in broadcast
+                return
+
             received_data = pickle.loads(self.recv_data(self.client_socket))
             file_data_name_dict = received_data.get("DATA")
 
@@ -284,8 +287,9 @@ class GroupCommunication:
             operation_dict = {"FLAG": "<NARF>", "DATA": file_folder}
             self.send_data(self.client_socket, pickle.dumps(operation_dict))
 
-            if self.running:
+            if self.running:  # Check if data will end up in broadcast
                 return
+
             received_data = pickle.loads(self.recv_data(self.client_socket))
             saved_file_prop_lst = received_data.get("DATA")
 
