@@ -468,6 +468,9 @@ class GroupsPage(ttk.Frame):
             else:
                 names_to_delete_lst.append(file_frame.get_filename())
 
+        print(f"names_to_delete_lst: {names_to_delete_lst}")
+        print(f"folders_to_delete_lst: {folders_to_delete_lst}")
+
         delete_thread = threading.Thread(
             target=self.group_communicator.handle_delete_request_group,
             args=(names_to_delete_lst, folders_to_delete_lst, self.get_current_folder())

@@ -46,6 +46,10 @@ class GroupFiles:
         SELECT Owner, Name, Size, Date, GroupName, Folder FROM GroupFiles WHERE GroupName = ? AND Folder = ?;
     '''
 
+    GET_NAMES_FROM_GROUP_QUERY = '''
+        SELECT Name FROM GroupFiles WHERE GroupName = ? AND Folder = ?;    
+    '''
+
     def __init__(self, userid: str, database_path='../database/User_info.db'):
         self.conn = sqlite3.connect(database_path)
         self.cur = self.conn.cursor()
@@ -73,6 +77,13 @@ class GroupFiles:
             formatted_files.append((owner, name, size, date, group_name, folder))
         return formatted_files
 
+    def get_name_file_from_folder_group(self, group_name: str, folder_name: str):
+        names = self._execute_query(self.GET_NAMES_FROM_GROUP_QUERY, (group_name, folder_name))
+        formatted_names = []
+        for name in names:
+            formatted_names.append(name[0])
+        return formatted_names
+
     def delete_file(self, group_name: str, name: str, folder: str):
         self._execute_query(self.REMOVE_FILE_QUERY, (group_name, self.owner_id, name, folder))
         self.conn.commit()
@@ -96,3 +107,7 @@ class GroupFiles:
     def close_connection(self):
         self.conn.close()
 
+
+if __name__ == '__main__':
+    asf = GroupFiles('tomerbs1810@gmail.com')
+    print(asf.get_name_file_from_folder_group('group1', 'Room'))
