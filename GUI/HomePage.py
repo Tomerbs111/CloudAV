@@ -121,6 +121,8 @@ class FileFrame(ttk.Frame):
     def on_click(self, event):
         if self.is_folder and self.click_callback:
             self.click_callback(self.fname)
+        else:
+            self.check_var.set("on")
 
     def get_checkvar(self) -> bool:
         return self.check_var.get() == "on"
