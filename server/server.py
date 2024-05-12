@@ -512,8 +512,8 @@ class Server:
             rooms_dict = {}
             for room in rooms_containing_user:
                 room_permissions = room_manager.get_room_permissions(room)
-                rooms_dict[room] = room_permissions
-
+                room_admin = room_manager.get_room_admin(room)
+                rooms_dict[room] = [room_permissions, room_admin]
             # Pickle and send the dictionary over the socket
             data_to_send = {"FLAG": "<GET_ROOMS>", "DATA": rooms_dict}
             self.send_data(client_socket, pickle.dumps(data_to_send))

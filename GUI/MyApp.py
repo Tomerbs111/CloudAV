@@ -179,17 +179,17 @@ class Page(ttk.Frame):
             command=self.handle_create_group_window
         ).pack(side='left', pady=5, fill='x', padx=10)
 
-    def switch_to_groups_page(self, group_name, permissions):
+    def switch_to_groups_page(self, group_name, permissions, room_admin):
         if self.current_frame.__class__.__name__ != "GroupsPage":
             print(f"Switching to {group_name}")
-            self.switch_frame("GroupsPage", self.communicator, group_name, permissions)
+            self.switch_frame("GroupsPage", self.communicator, group_name, permissions, room_admin)
             threading.Thread(target=self.current_frame.group_communicator.handle_join_group_request,
                              args=(group_name,)).start()
 
         elif self.current_frame.group_name != group_name:
             threading.Thread(target=self.current_frame.group_communicator.handle_leave_group_request).start()
             print(f"Switching to {group_name}")
-            self.switch_frame("GroupsPage", self.communicator, group_name, permissions)
+            self.switch_frame("GroupsPage", self.communicator, group_name, permissions, room_admin)
             threading.Thread(target=self.current_frame.group_communicator.handle_join_group_request,
                              args=(group_name,)).start()
 
@@ -285,12 +285,14 @@ class Page(ttk.Frame):
             print(rooms_dict)
 
             for room, permissions in rooms_dict.items():
+                print(f"Room: {room}, Permissions: {permissions}")
                 CTkButton(
                     self.f_options,
                     text=room,
                     compound='left',
                     fg_color="transparent",
-                    command=lambda button_text=room: self.switch_to_groups_page(button_text, permissions)
+                    command=lambda button_text=room: self.switch_to_groups_page(button_text, permissions[0],
+                                                                                permissions[1])
                 ).pack(side='top', pady=5, anchor='w', fill='x', padx=10)
 
         except Exception as e:
@@ -457,7 +459,7 @@ class MyApp(ttk.Window):
 
         elif frame_class == "GroupsPage":
             new_frame = GroupsPage(self.page.f_current_page, self.switch_frame, self.group_communicator,
-                                   group_name=args[1], permissions=args[2])
+                                   group_name=args[1], permissions=args[2], admin=args[3])
 
             if self.current_frame:
                 self.current_frame.pack_forget()

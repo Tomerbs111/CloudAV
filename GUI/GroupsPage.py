@@ -152,13 +152,14 @@ class GroupFileFrame(ttk.Frame):
 
 
 class GroupsPage(ttk.Frame):
-    def __init__(self, parent, switch_frame, group_communicator, group_name, permissions):
+    def __init__(self, parent, switch_frame, group_communicator, group_name, permissions, admin):
         super().__init__(parent)
         self.parent_app = parent
         self.switch_frame = switch_frame
         self.group_name = group_name
         self.group_communicator = group_communicator
         self.permissions = permissions
+        self.admin = admin
 
         # setting up variables
         self.rename_button = None
@@ -170,7 +171,6 @@ class GroupsPage(ttk.Frame):
         self.name_sort_order = 'ascending'  # Keep track of the current sorting order
         self.clicked_folders = []
         self.current_folder = group_name  # Initialize current folder to the group name by default
-        self.owner = group_communicator.get_group_owner()
 
         # setting up the frame
         self.setup_group_file_actions_frame()

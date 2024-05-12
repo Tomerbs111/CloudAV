@@ -176,6 +176,7 @@ class GroupCommunication:
 
         self.receive_thread = None  # Thread for receiving broadcasted files
         self.running = False  # Flag to control the thread
+        self.lock = threading.Lock()  # Add a lock for synchronization
 
     def send_data(self, client_socket: socket, data: str | bytes):
         if isinstance(data, str):
@@ -216,9 +217,8 @@ class GroupCommunication:
         received_data = pickle.loads(self.recv_data(self.client_socket))
         print(received_data)
         if received_data.get("FLAG") == '<JOINED>':
-            print("joined")
-            saved_file_prop_lst = self.handle_presaved_files_group()
-            print("i like man")
+            self.owner_email = received_data.get("DATA")
+            saved_file_prop_lst = self.handle_presaved_files_group(group_name)
             # Check if the callback is set before calling it
             if self.handle_broadcast_requests:
                 self.handle_broadcast_requests(pickle.dumps({"FLAG": "<NARF>", "DATA": saved_file_prop_lst}))
@@ -239,7 +239,6 @@ class GroupCommunication:
             received_data = pickle.loads(self.recv_data(self.client_socket))
             print(f"Received data from broadcast in client: {received_data}")
             flag = received_data.get("FLAG")
-
             if flag == "<LEFT>":
                 print("left")
                 self.running = False
@@ -249,7 +248,14 @@ class GroupCommunication:
             if on_broadcast_callback:
                 on_broadcast_callback(received_data)
 
-    def handle_send_file_request(self, file_name, short_filename, short_file_date, file_size):
+    def handle_add_new_folder_request(self, real_folder_name, folder_size, folder_date, folder_folder, group_name):
+        data_dict = {"FLAG": '<CREATE_FOLDER_GROUP>',
+                     "DATA": [real_folder_name, folder_size, folder_date, folder_folder, group_name]}
+        self.send_data(self.client_socket, pickle.dumps(data_dict))
+
+        print(f"Folder '{real_folder_name}' created successfully")
+
+    def handle_send_file_request(self, file_name, short_filename, short_file_date, file_size, file_folder):
         file_content = b''
         with open(file_name, 'rb') as file:
             while True:
@@ -258,36 +264,52 @@ class GroupCommunication:
                     break
                 file_content += data
 
-        all_file_content = [short_filename, file_size, short_file_date, file_content]
+        all_file_content = [short_filename, file_size, short_file_date, file_content, file_folder]
         data_dict = {"FLAG": '<SEND>', "DATA": all_file_content}
 
         self.send_data(self.client_socket, pickle.dumps(data_dict))
         print(f"File '{file_name}' sent successfully")
 
-    def handle_download_request_group(self, select_file_names_lst):
+    def handle_download_request_group(self, select_file_names_lst, save_path, file_folder):
         try:
-            print("Receiving files...")
-            data_dict = {"FLAG": '<RECV>', "DATA": select_file_names_lst}
+            data_dict = {"FLAG": '<RECV>', "DATA": [select_file_names_lst, file_folder]}
             self.send_data(self.client_socket, pickle.dumps(data_dict))
+
+            if self.running:  # Check if data will end up in broadcast
+                return
+
+            received_data = pickle.loads(self.recv_data(self.client_socket))
+            file_data_name_dict = received_data.get("DATA")
+
+            for indiv_filename, indiv_filebytes in file_data_name_dict.items():
+                file_path = os.path.join(save_path, indiv_filename)
+                with open(file_path, "wb") as file:
+                    file.write(indiv_filebytes)
+                    print(f"File '{indiv_filename}' received successfully.")
 
         except Exception as e:
             print(f"Error in receive_checked_files: {e}")
 
-    def handle_presaved_files_group(self):
+    def handle_presaved_files_group(self, file_folder):
         try:
-            operation_dict = {"FLAG": "<NARF>"}
+            operation_dict = {"FLAG": "<NARF>", "DATA": file_folder}
             self.send_data(self.client_socket, pickle.dumps(operation_dict))
+
+            if self.running:  # Check if data will end up in broadcast
+                return
 
             received_data = pickle.loads(self.recv_data(self.client_socket))
             saved_file_prop_lst = received_data.get("DATA")
+
+            # Release the lock after the operation is completed
 
             return saved_file_prop_lst
 
         except Exception as e:
             print(f"Error in handle_presaved_files_client: {e}")
 
-    def handle_delete_request_group(self, select_file_names_lst):
-        data_dict = {"FLAG": '<DELETE>', "DATA": select_file_names_lst}
+    def handle_delete_request_group(self, select_file_names_lst, folders_to_delete, current_folder):
+        data_dict = {"FLAG": '<DELETE>', "DATA": [folders_to_delete, select_file_names_lst, current_folder]}
         self.send_data(self.client_socket, pickle.dumps(data_dict))
         print("Files deleted successfully.")
 
@@ -295,6 +317,8 @@ class GroupCommunication:
         data_dict = {"FLAG": '<RENAME>', "DATA": rename_data}
         self.send_data(self.client_socket, pickle.dumps(data_dict))
         print("Files renamed successfully.")
+
+
 
 
 # ------------Client setup------------
