@@ -5,25 +5,29 @@ import threading
 from tkinter import filedialog as fd
 from datetime import datetime
 import customtkinter
+import pyotp
 from ttkbootstrap.scrolled import ScrolledFrame
 import re
 import ttkbootstrap as ttk
 from customtkinter import *
 from PIL import Image, ImageTk
 import tkinter as tk
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
+import os
 
 from GUI.HomePage import HomePage
 
 
 class TwoFactorAuthentication(CTkToplevel):
-    def __init__(self, master, email, client_name, client_ip):
+    def __init__(self, master, email):
         super().__init__(master)
         self.master = master
         self.email = email
-        self.client_name = client_name
-        self.client_ip = client_ip
+        self.email = email
 
-        self.verification_pass = self.send_email(self.email, self.client_name, self.client_ip)
+        self.verification_pass = self.send_email(self.email)
         self.setup_image()
         self.setup_information()
         self.setup_verification_code_frame()
@@ -76,123 +80,58 @@ class TwoFactorAuthentication(CTkToplevel):
         self.answer_label = CTkLabel(container_frame, text="", text_color="red")
 
     def on_submit(self):
-        if self.code_entries == self.verification_pass:
-            print("gay")
+        entered_code = "".join(entry.get() for entry in self.code_entries)
+        if entered_code == self.verification_pass:
+            print("Verification successful")
+        else:
+            print("Verification failed")
 
-    def send_email(self, u_email, client_name, client_ip):
-        characters = string.digits
+    def create_verification_code(self):
+        key = "TomerBenShushanSecretKey"
 
+        totp = pyotp.TOTP(key)
+        print(totp)
+        return totp.now()
+    def send_email(self, u_email):
         # Generate a random password of the specified length
-        password = ''.join(secrets.choice(characters) for i in range(6))
+        password = self.create_verification_code()
         try:
+            # Create a MIME multipart message
+            msg = MIMEMultipart()
+            msg['From'] = 'cloudav03@gmail.com'
+            msg['To'] = u_email
+            msg['Subject'] = 'Two-Factor Authentication'
+
+            # Read HTML content from file
+            with open('GUI/2fa mail.html', 'r') as file:
+                html_content = file.read()
+
+            # Replace placeholders with actual data
+            html_content = html_content.replace('[Client Name]', 'John Doe')
+            html_content = html_content.replace('[Client Location]', 'New York')
+            html_content = html_content.replace('[Client IP]', '192.168.1.1')
+            html_content = html_content.replace('[Client Device]', 'Desktop')
+            html_content = html_content.replace('[Client Time]', '2024-05-10 12:00:00')
+            html_content = html_content.replace('[Client Code]', password)
+
+            # Attach HTML content
+            msg.attach(MIMEText(html_content, 'html'))
+
+            # Attach the logo image
+            img_path = "GUI/file_icons/logo_cloudav_2.png"
+            with open(img_path, 'rb') as f:
+                logo_image = MIMEImage(f.read())
+                logo_image.add_header('Content-ID', '<logo>')
+                msg.attach(logo_image)
+
+            # Connect to SMTP server and send email
             server = smtplib.SMTP('smtp.gmail.com:587')
             server.ehlo()
             server.starttls()
             server.login('cloudav03@gmail.com', 'ivdr wron fhzc xjgo')
+            server.sendmail('cloudav03@gmail.com', u_email, msg.as_string())
+            server.quit()
 
-            # HTML content for the email message with placeholders for dynamic data
-            html_content = """
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
-                <title>Two-Factor Authentication</title>
-                <style>
-                    /* Styles for the email content */
-                    body {{
-                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                        background-color: #f6f6f6;
-                        color: #333;
-                        padding: 20px;
-                    }}
-                    .container {{
-                        max-width: 700px; /* Adjusted max-width for wider container */
-                        margin: 0 auto;
-                        background-color: #ffffff;
-                        padding: 30px;
-                        border-radius: 10px;
-                        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-                    }}
-                    h1 {{
-                        color: #1e88e5;
-                        text-align: center;
-                        margin-bottom: 20px;
-                    }}
-                    h2 {{
-                        color: #4caf50;
-                        text-align: left;
-                    }}
-                    p {{
-                        margin-bottom: 20px;
-                        color: #666;
-                        line-height: 1.6;
-                    }}
-                    .code-input {{
-                        width: 100px;
-                        padding: 10px;
-                        font-size: 16px;
-                        text-align: center;
-                        border: 2px solid #1e88e5;
-                        border-radius: 5px;
-                        color: #1e88e5;
-                        margin-bottom: 20px;
-                        display: inline-block;
-                    }}
-                    .logo {{
-                        max-width: 100%;
-                        height: auto;
-                        display: block;
-                        margin: 0 auto 30px;
-                    }}
-                    .cta-button {{
-                        background-color: #4caf50;
-                        color: #fff;
-                        padding: 10px 20px;
-                        text-decoration: none;
-                        border-radius: 5px;
-                        display: inline-block;
-                    }}
-                    .cta-button:hover {{
-                        background-color: #388e3c;
-                    }}
-                    .small-msg {{
-                        font-size: 12px;
-                        color: #999;
-                        text-align: center;
-                        margin-top: 20px;
-                    }}
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <img src="GUI/file_icons/logo_cloudav_2.png" class="logo" alt="CloudAV Logo">
-                    <h1>Two-Factor Authentication</h1>
-                    <h2>Dear {},</h2>
-                    <p>We noticed a login from a new device or location for YeledYafe12 and want to make sure it was you.</p>
-                    <p><strong>Regional Location:</strong> Tel Aviv, Israel<br>
-                    <strong>IP Address:</strong> {}<br>
-                    <strong>Device:</strong> Computer (Windows)<br>
-                    <strong>Time:</strong> {}</p>
-                    <p>To enhance the security of your account, we've introduced Two-Factor Authentication (2FA). This added layer of protection requires you to input a unique 6-digit code during login. The code will be sent to your registered email or phone number.</p>
-                    <p>Please find the space below to input the 6-digit code:</p>
-                    <div class="code-input">{}</div>
-                    <p>Your account's security is our priority, and we appreciate your cooperation in keeping it secure.</p>
-                    <p>Best regards,<br>CloudAV</p>
-                    <p class="small-msg"><br>Please do not reply to this message as the response will not be delivered to the originator.</p>
-                </div>
-            </body>
-            </html>
-            """.format(client_name, client_ip, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), password)
-
-            # Create a MIMEText object with HTML content
-            from email.mime.text import MIMEText
-            message = MIMEText(html_content, 'html')
-
-            message['Subject'] = 'Two-Factor Authentication'
-            message['From'] = 'cloudav03@gmail.com'
-            message['To'] = u_email
-
-            server.sendmail('cloudav03@gmail.com', u_email, message.as_string())
             print("Email sent successfully!")
 
             return password
@@ -201,19 +140,17 @@ class TwoFactorAuthentication(CTkToplevel):
             print("Email failed to send.")
 
 
-def run_test():
+def run_test(email):
     root = tk.Tk()
-    client_name = "John Doe"
-    client_ip = "192.168.1.1"
-    email = "chairgood1@gmail.com"
 
-    # Create an instance of TwoFactorAuthentication
-    two_factor_auth = TwoFactorAuthentication(root, client_name, client_ip, email)
+    # Create an instance of TwoFactorAuthentication with the provided email address
+    two_factor_auth = TwoFactorAuthentication(root, email)
 
     # Run the Tkinter main loop
     root.mainloop()
 
 
-# Run the test
+# Run the test with the provided email address
 if __name__ == "__main__":
-    run_test()
+    email = "cajoya9761@bsomek.com"  # Provide the email address here
+    run_test(email)
