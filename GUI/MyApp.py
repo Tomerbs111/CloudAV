@@ -246,7 +246,6 @@ class Page(ttk.Frame):
     def handle_upload_folder_request(self):
         threading.Thread(target=self.current_frame.handle_folder_upload).start()
 
-
     def handle_create_group_window(self):
         if self.create_group_top is None or not self.create_group_top.winfo_exists():
             try:
@@ -255,7 +254,12 @@ class Page(ttk.Frame):
                 return None
             self.create_group_top = CreateGroupWin(self, all_user_list)
 
+            # Wait for the window to be closed or destroyed
             self.create_group_top.wait_window()
+
+            # Check if the window was destroyed without submission
+            if not self.create_group_top.submitted:
+                return
 
             group_name = self.create_group_top.selected_name
             submitted_participants = self.create_group_top.submitted_participants
@@ -309,7 +313,8 @@ class CreateGroupWin(CTkToplevel):
         self.group_name_error_label = None
         self.participants_error_label = None
         self.submitted_participants = None
-
+        self.permissions_answers = None
+        self.submitted = False  # Track if the form was submitted
         ttk.Label(self, text="Create your shared file group", font=("Calibri bold", 22)
                   ).pack(anchor='w', padx=5, pady=15, fill='x')
 
@@ -419,6 +424,7 @@ class CreateGroupWin(CTkToplevel):
         print(f"Group Name: {self.selected_name}")
         print(f"Selected Participants: {self.submitted_participants}")
         print(f"Permissions: {self.permissions_answers}")
+        self.submitted = True  # Set submitted flag to True
         self.destroy()
 
     def on_cancel(self):

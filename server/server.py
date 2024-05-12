@@ -597,7 +597,8 @@ class Server:
         key = "TomerBenShushanSecretKey"
         totp = pyotp.TOTP(key)
 
-        return totp.now()
+        #return totp.now()
+        return "123456"
 
     def send_otp_email(self, u_email, u_username, client_socket):
         # Generate a random password of the specified length

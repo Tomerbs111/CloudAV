@@ -63,7 +63,16 @@ class ClientCommunication:
         else:
             return answer_flag
 
-    def handle_add_new_folder_request(self,real_folder_name, folder_size, folder_date, folder_folder):
+    def handle_client_2fa(self, u_code):
+
+        data_dict = {"FLAG": '<2FA>', "DATA": u_code}
+        self.send_data(self.client_socket, pickle.dumps(data_dict))
+
+        server_answer = pickle.loads(self.recv_data(self.client_socket))
+        print(server_answer)
+        return server_answer
+
+    def handle_add_new_folder_request(self, real_folder_name, folder_size, folder_date, folder_folder):
         data_dict = {"FLAG": '<CREATE_FOLDER>', "DATA": [real_folder_name, folder_size, folder_date, folder_folder]}
         self.send_data(self.client_socket, pickle.dumps(data_dict))
 
