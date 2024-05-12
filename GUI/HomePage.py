@@ -9,7 +9,6 @@ from GUI.GroupsPage import GroupsPage
 import datetime
 
 
-
 class FileFrame(ttk.Frame):
     def __init__(self, master, fname, fsize, fdate, favorite_callback=None, is_folder=False, click_callback=None):
         super().__init__(master)
@@ -122,6 +121,8 @@ class FileFrame(ttk.Frame):
     def on_click(self, event):
         if self.is_folder and self.click_callback:
             self.click_callback(self.fname)
+        else:
+            self.check_var.set("on")
 
     def get_checkvar(self) -> bool:
         return self.check_var.get() == "on"
@@ -178,6 +179,7 @@ class FileFrame(ttk.Frame):
 
 class HomePage(ttk.Frame):
     customtkinter.set_appearance_mode("dark")
+
     def __init__(self, parent, switch_frame, client_communicator):
         super().__init__(parent)
         self.parent_app = parent
@@ -195,7 +197,6 @@ class HomePage(ttk.Frame):
         self.name_sort_order = 'ascending'  # Keep track of the current sorting order
         self.clicked_folders = []
         self.current_folder = "Home"  # Initialize current folder to "Home" by default
-
 
         self.setup_folder_manager_frame()
         self.setup_file_actions_frame()
@@ -286,6 +287,22 @@ class HomePage(ttk.Frame):
         self.f_file_list = CTkScrollableFrame(master=combined_frame, fg_color='transparent')
         self.f_file_list.place(relx=0, rely=0.09, relwidth=1, relheight=0.91)
 
+    def handle_duplicate_names(self, given_name):
+        # Extract existing names from file frames
+        existing_names = [file_frame.get_filename() for file_frame in self.file_frames]
+
+        # Check if the given name already exists
+        if given_name in existing_names:
+            # Determine the number to append to the given name to make it unique
+            count = 1
+            new_name = f"{given_name} ({count})"
+            while new_name in existing_names:
+                count += 1
+                new_name = f"{given_name} ({count})"
+            return new_name
+        else:
+            return given_name
+
     def sort_by_name(self):
         # Toggle the sorting order
         if self.name_sort_order == 'ascending':
@@ -299,6 +316,7 @@ class HomePage(ttk.Frame):
         for file_frame in self.file_frames:
             file_frame.pack_forget()
             file_frame.pack(expand=True, fill='x', side='top')
+
     @staticmethod
     def set_size_format(file_size_bytes):
         if file_size_bytes < 1024:
@@ -327,6 +345,7 @@ class HomePage(ttk.Frame):
             short_file_date = file_uploadate.strftime('%B %d, %Y')
 
         return short_file_date
+
     def set_frame_properties_for_display(self, file_name, file_bytes, file_uploadate: datetime):
         short_filename = os.path.basename(file_name)
 
@@ -336,18 +355,18 @@ class HomePage(ttk.Frame):
         return short_filename, formatted_file_size, short_file_date
 
     def handle_add_new_folder_request(self, folder_name):
-        real_folder_name = folder_name.replace(" folder", "")
+        real_folder_name = folder_name.replace(" <folder>", "")
         folder_date = datetime.datetime.now()
         folder_size = "0"
         folder_folder = self.get_current_folder()
 
         formatted_folder_date = self.set_date_format(folder_date)
 
-        add_folder_thread = threading.Thread(target=self.client_communicator.handle_add_new_folder_request, args=(folder_name, folder_size, folder_date, folder_folder))
+        add_folder_thread = threading.Thread(target=self.client_communicator.handle_add_new_folder_request,
+                                             args=(folder_name, folder_size, folder_date, folder_folder))
         add_folder_thread.start()
 
         self.add_folder_frame(real_folder_name, folder_size, formatted_folder_date)
-
 
     def add_folder_frame(self, real_folder_name, folder_size, folder_date):
         file_frame = FileFrame(self.f_file_list, real_folder_name, folder_size, folder_date, is_folder=True,
@@ -416,6 +435,7 @@ class HomePage(ttk.Frame):
             file_frame.favorite_button.configure(
                 image=CTkImage(Image.open("../GUI/file_icons/star_icon_light.png"), size=(20, 20)))
             file_frame.check_favorite.set("on")
+
     def handle_presenting_presaved_files(self, folder_name):
         narf_answer = self.client_communicator.handle_presaved_files_client(folder_name)
         if narf_answer == "<NO_DATA>":
@@ -426,12 +446,13 @@ class HomePage(ttk.Frame):
                 formatted_file_date = self.set_date_format(file_date)
                 formatted_file_size = self.set_size_format(file_bytes)
 
-                if " folder" in file_name:
+                if " <folder>" in file_name:
                     formatted_file_size = str(file_bytes) + " items"
-                    self.add_folder_frame(file_name.replace(" folder", ""), formatted_file_size, formatted_file_date)
+                    self.add_folder_frame(file_name.replace(" <folder>", ""), formatted_file_size, formatted_file_date)
                 else:
-                    self.add_file_frame(file_name.replace(" folder", ""), formatted_file_size, formatted_file_date,
+                    self.add_file_frame(file_name.replace(" <folder>", ""), formatted_file_size, formatted_file_date,
                                         favorite)
+
     def handle_send_file_request(self):
         try:
             filetypes = (
@@ -455,7 +476,7 @@ class HomePage(ttk.Frame):
 
             send_file_thread = threading.Thread(
                 target=self.client_communicator.handle_send_file_request(file_name, short_filename, file_date,
-                                                                         file_bytes,file_folder))
+                                                                         file_bytes, file_folder))
             send_file_thread.start()
 
             favorite = 0
@@ -464,6 +485,7 @@ class HomePage(ttk.Frame):
 
         except FileNotFoundError:
             return
+
     def handle_download_request_client(self):
         select_file_frames = self.get_checked_file_frames()
         select_file_names_lst = [file_frame.get_filename() for file_frame in select_file_frames]
@@ -472,6 +494,7 @@ class HomePage(ttk.Frame):
             target=self.client_communicator.handle_download_request_client,
             args=(select_file_names_lst, self.save_path, self.get_current_folder()))
         receive_thread.start()
+
     def handle_favorite_toggle(self, file_frame, new_value):
         file_name = file_frame.get_filename()
         if new_value == "on":
@@ -484,6 +507,7 @@ class HomePage(ttk.Frame):
                 target=self.client_communicator.handle_set_favorite_request_client,
                 args=(file_name, new_value))
             unfavorite_thread.start()
+
     def handle_rename_request_client(self):
         try:
             file_frame = self.get_checked_file_frames()[0]
@@ -507,16 +531,24 @@ class HomePage(ttk.Frame):
                 file_frame.update_idletasks()
         except IndexError:
             pass
+
     def handle_delete_request_client(self):
         frames_to_delete = self.get_checked_file_frames()
-        names_to_delete_lst = [file_frame.get_filename() for file_frame in frames_to_delete]
+        names_to_delete_lst = []
+        folders_to_delete_lst = []
 
-        self.client_communicator.handle_delete_request_client(names_to_delete_lst)
+        for file_frame in frames_to_delete:
+            if file_frame.is_folder:
+                folders_to_delete_lst.append(file_frame.get_filename() + " <folder>")
+            else:
+                names_to_delete_lst.append(file_frame.get_filename())
+
+        self.client_communicator.handle_delete_request_client(names_to_delete_lst, folders_to_delete_lst,
+                                                              self.current_folder)
         for file_frame in frames_to_delete:
             file_frame.kill_frame()
 
         self.file_frame_counter = len(self.file_frames)
-
 
     def update_current_folder(self, folder_name):
         self.current_folder = folder_name
@@ -524,8 +556,65 @@ class HomePage(ttk.Frame):
     def get_current_folder(self):
         return self.current_folder
 
+    def get_files_and_subdirectories(self, folder_path):
+        """
+        Recursively gets all files and subdirectories from a folder.
 
+        Args:
+        folder_path (str): The path of the folder.
 
+        Returns:
+        list: A list of file paths and subdirectory paths.
+        """
+        paths = []
+        for root, directories, files in os.walk(folder_path):
+            for directory in directories:
+                directory_path = os.path.join(root, directory)
+                paths.append(directory_path)
+            for file in files:
+                file_path = os.path.join(root, file)
+                paths.append(file_path)
+        return paths
 
+    def handle_folder_upload(self):
+        try:
+            folder_path = fd.askdirectory(title='Select a folder')
+            if folder_path:
+                paths = self.get_files_and_subdirectories(folder_path)
+                print(paths)
+                for path in paths:
+                    if os.path.isdir(path):  # If it's a folder
+                        folder_name = os.path.basename(path) + " <folder>"
+                        folder_date = datetime.datetime.now()
+                        folder_size = len(os.listdir(path))  # Count the number of files in the folder
+                        formatted_folder_date = self.set_date_format(folder_date)
 
+                        # Add folder to the database
+                        send_folder_thread = threading.Thread(
+                            target=self.client_communicator.handle_add_new_folder_request,
+                            args=(
+                                folder_name, folder_size, folder_date, os.path.basename(os.path.dirname(path)))
+                        )
+                        send_folder_thread.start()
+                    else:  # If it's a file
+                        file_bytes = os.path.getsize(path)
+                        file_date = datetime.datetime.now()
 
+                        short_filename, formatted_file_size, short_file_date = \
+                            self.set_frame_properties_for_display(path, file_bytes, file_date)
+
+                        file_folder = os.path.basename(os.path.dirname(path))
+
+                        # Upload file to the database
+                        send_file_thread = threading.Thread(
+                            target=self.client_communicator.handle_send_file_request,
+                            args=(path, short_filename, file_date, file_bytes, file_folder)
+                        )
+                        send_file_thread.start()
+
+                        favorite = 0
+
+                self.handle_add_new_folder_request(os.path.basename(folder_path) + " <folder>")
+
+        except FileNotFoundError:
+            return

@@ -243,7 +243,12 @@ class Server:
                 received_data = pickle.loads(self.recv_data(client_socket))
 
                 if received_data.get("FLAG") == "<NARF>":
-                    self.handle_presaved_files_action(client_socket, group_manager)
+                    narf_data = received_data.get("DATA")
+                    self.handle_presaved_files_action(client_socket, group_manager, narf_data)
+
+                elif received_data.get("FLAG") == "<CREATE_FOLDER_GROUP>":
+                    create_folder_data = received_data.get("DATA")
+                    self.handle_create_folder_action(group_manager, create_folder_data)
 
                 elif received_data.get("FLAG") == "<RECV>":
                     recv_data = received_data.get("DATA")
@@ -274,32 +279,34 @@ class Server:
             client_socket.close()
 
     def handle_presaved_files_action(self, client_socket, db_manager, folder_name):
-        try:
-            saved_file_prop_lst = []
-            if isinstance(db_manager, GroupFiles):
-                group_name = self.get_group_name(client_socket)
-                saved_file_prop_lst = db_manager.get_all_files_from_group(group_name)
+        print(folder_name)
+        saved_file_prop_lst = []
+        if isinstance(db_manager, GroupFiles):
+            group_name = self.get_group_name(client_socket)
+            saved_file_prop_lst = db_manager.get_all_files_from_group(group_name, folder_name)
+            print(saved_file_prop_lst)
 
-            elif isinstance(db_manager, UserFiles):
-                saved_file_prop_lst = db_manager.get_all_data(folder_name)
+        elif isinstance(db_manager, UserFiles):
+            saved_file_prop_lst = db_manager.get_all_data(folder_name)
 
-            data_to_send = {"FLAG": "<NARF>", "DATA": saved_file_prop_lst}
+        data_to_send = {"FLAG": "<NARF>", "DATA": saved_file_prop_lst}
 
-            self.send_data(client_socket, pickle.dumps(data_to_send))
-
-        except Exception as e:
-            print(f"Error in handle_narf_action: {e}")
-            client_socket.close()
+        self.send_data(client_socket, pickle.dumps(data_to_send))
 
     def handle_create_folder_action(self, db_manager, create_folder_data):
         folder_name = create_folder_data[0]
         folder_size = create_folder_data[1]
         folder_date = create_folder_data[2]
-        folder_bytes = None
+        folder_bytes = b""
         folder_folder = create_folder_data[3]
 
         if isinstance(db_manager, UserFiles):
             db_manager.insert_file(folder_name, folder_size, folder_date, folder_bytes, folder_folder)
+
+        elif isinstance(db_manager, GroupFiles):
+            print(create_folder_data)
+            group_name = create_folder_data[4]
+            db_manager.insert_file(folder_name, folder_size, folder_date, group_name, folder_folder, folder_bytes)
 
     def handle_send_file_action(self, client_socket, db_manager, all_file_content):
         try:
@@ -311,9 +318,9 @@ class Server:
 
             if isinstance(db_manager, GroupFiles):
                 group_name = self.get_group_name(client_socket)
-                db_manager.insert_file(file_name, file_size, file_date, group_name, file_bytes)
+                db_manager.insert_file(file_name, file_size, file_date, group_name, file_folder, file_bytes)
 
-                file_info = self.get_file_info(db_manager, group_name, file_name)
+                file_info = self.get_file_info(db_manager, group_name, file_name, file_folder)
                 queued_info = {"FLAG": "<SEND>", "DATA": file_info}
 
                 self.file_queue.put((client_socket, queued_info))
@@ -335,7 +342,8 @@ class Server:
             file_data_name_dict = {}
             if isinstance(db_manager, GroupFiles):
                 for individual_file in select_file_names_lst:
-                    file_data = db_manager.get_file_data(self.get_group_name(client_socket), individual_file)[0]
+                    file_data = \
+                    db_manager.get_file_data(self.get_group_name(client_socket), individual_file, folder_name)[0]
                     file_data_name_dict[individual_file] = file_data
 
 
@@ -343,7 +351,6 @@ class Server:
                 for individual_file in select_file_names_lst:
                     file_data = db_manager.get_file_data(individual_file, folder_name)[0]
                     file_data_name_dict[individual_file] = file_data
-
 
             data_dict = {"FLAG": '<RECV>', "DATA": file_data_name_dict}
             self.send_data(client_socket, pickle.dumps(data_dict))
@@ -353,18 +360,55 @@ class Server:
         except Exception as e:
             print(f"Error in handle_read_files_action: {e}")
 
-    def handle_delete_file_action(self, client_socket, db_manager, select_file_names_lst):
+    def handle_delete_file_action(self, client_socket, db_manager, delete_data):
         try:
-            if isinstance(db_manager, GroupFiles):
-                for individual_file in select_file_names_lst:
-                    db_manager.delete_file(self.get_group_name(client_socket), individual_file)
-                    queued_info = {"FLAG": "<DELETE>", "DATA": individual_file}
 
+            folder_names_lst = delete_data[0]
+            file_names_lst = delete_data[1]
+            current_folder = delete_data[2]
+
+            if isinstance(db_manager, GroupFiles):
+                for individual_file in file_names_lst:
+                    db_manager.delete_file(self.get_group_name(client_socket), individual_file, current_folder)
+                    queued_info = {"FLAG": "<DELETE>", "DATA": individual_file}
                     self.file_queue.put((client_socket, queued_info))
 
+                for individual_folder in folder_names_lst:
+                    def delete_folder_recursive(current_folder, folder_name):
+                        all_files = db_manager.get_name_file_from_folder_group(self.get_group_name(client_socket),
+                                                                               folder_name)
+                        print(f"all_files: {all_files}")
+                        if len(all_files) == 0:
+                            return
+                        for files_in_folder in all_files:
+                            print(files_in_folder)
+                            if " <folder>" in files_in_folder:
+                                delete_folder_recursive(folder_name, files_in_folder.replace(" <folder>", ""))
+                            db_manager.delete_file(self.get_group_name(client_socket), files_in_folder, folder_name)
+                            queued_info = {"FLAG": "<DELETE>", "DATA": files_in_folder}
+                            self.file_queue.put((client_socket, queued_info))
+
+                    delete_folder_recursive(current_folder, individual_folder.replace(" <folder>", ""))
+                    db_manager.delete_file(self.get_group_name(client_socket), individual_folder, current_folder)
+
+
             elif isinstance(db_manager, UserFiles):
-                for individual_file in select_file_names_lst:
-                    db_manager.delete_file(individual_file)
+                for individual_file in file_names_lst:
+                    db_manager.delete_file(individual_file, current_folder)
+                for individual_folder in folder_names_lst:
+                    def delete_folder_recursive(current_folder, folder_name):
+                        all_files = db_manager.get_folder_data(folder_name)
+                        print(f"all_files: {all_files}")
+                        if len(all_files) == 0:
+                            return
+                        for files_in_folder in all_files:
+                            print(files_in_folder)
+                            if " <folder>" in files_in_folder:
+                                delete_folder_recursive(folder_name, files_in_folder.replace(" <folder>", ""))
+                            db_manager.delete_file(files_in_folder, folder_name)
+
+                    delete_folder_recursive(current_folder, individual_folder.replace(" <folder>", ""))
+                    db_manager.delete_file(individual_folder, current_folder)
             print("Files deleted successfully.")
 
         except Exception as e:
@@ -373,11 +417,13 @@ class Server:
 
     def handle_rename_file_action(self, client_socket, db_manager, rename_data):
         try:
-            old_name, new_name = rename_data
+            old_name = rename_data[0]
+            new_name = rename_data[1]
+            file_folder = rename_data[2]
 
             if isinstance(db_manager, GroupFiles):
                 group_name = self.get_group_name(client_socket)
-                db_manager.rename_file(group_name, old_name, new_name)
+                db_manager.rename_file(group_name, old_name, new_name, file_folder)
                 queued_info = {"FLAG": "<RENAME>", "DATA": rename_data}
 
                 self.file_queue.put((client_socket, queued_info))
@@ -439,7 +485,6 @@ class Server:
 
             rooms_containing_user = room_manager.get_rooms_by_participant(user_email)
 
-
             # Create a dictionary with room names as keys and permissions as values
             rooms_dict = {}
             for room in rooms_containing_user:
@@ -487,7 +532,7 @@ class Server:
                 # If the user is not in the list, append with the received group name
                 self.clients_list.append(GroupUser(client_socket, user_email, group_name))
 
-            self.send_data(client_socket, pickle.dumps({"FLAG": "<JOINED>"}))
+            self.send_data(client_socket, pickle.dumps({"FLAG": "<JOINED>", "DATA": user_email}))
             print(f"User {user_email} joined the group '{group_name}'.")
 
             group_handler = threading.Thread(
@@ -517,8 +562,8 @@ class Server:
             print(f"Error in handle_leave_group_action: {e}")
             client_socket.close()
 
-    def get_file_info(self, group_manager, group_name, filename):
-        return group_manager.get_file_info(group_name, filename)
+    def get_file_info(self, group_manager, group_name, filename, file_folder):
+        return group_manager.get_file_info(group_name, filename, file_folder)
 
     def get_group_name(self, client_socket):
         for index, group_user in enumerate(self.clients_list):
