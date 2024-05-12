@@ -1,4 +1,6 @@
+import datetime
 import pickle
+import smtplib
 import socket
 import struct
 import threading
@@ -6,6 +8,10 @@ from database.AuthManager import AuthManager
 from database.GroupFiles import GroupFiles
 from database.UserFiles import UserFiles
 from database.RoomManager import RoomManager
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
+import pyotp
 
 from GroupUser import GroupUser
 from queue import Queue
@@ -93,9 +99,26 @@ class Server:
 
                     answer_to_send = self.handle_login_info(u_email, u_password, db_authentication)
 
-                self.send_data(client_socket, pickle.dumps(answer_to_send))
+
+
+                self.send_data(client_socket, pickle.dumps({"FLAG": "<SUCCESS>", "DATA": None}))
                 if answer_to_send.get("FLAG") == "<SUCCESS>":
                     identifier = answer_to_send.get("DATA")
+                    u_username = db_authentication.get_username(identifier)
+                    otp_password = self.send_otp_email(u_email, u_username, client_socket)
+
+                    while True:
+                        client_response = pickle.loads(self.recv_data(client_socket))
+                        print(client_response.get("DATA"))
+                        print(otp_password)
+                        if client_response.get("DATA") == otp_password:
+                            print(f"User {u_email} logged in.")
+                            self.send_data(client_socket, pickle.dumps({"FLAG": "<2FA_SUCCESS>", "DATA": db_authentication.get_username(identifier)}))
+                            break
+
+                        else:
+                            self.send_data(client_socket, pickle.dumps({"FLAG": "<2FA_FAILED>", "DATA": None}))
+
 
                 if identifier:
                     # Start a new thread to handle the client
@@ -569,6 +592,61 @@ class Server:
         for index, group_user in enumerate(self.clients_list):
             if group_user.user_socket == client_socket:
                 return group_user.group_name
+
+    def create_verification_code(self):
+        key = "TomerBenShushanSecretKey"
+        totp = pyotp.TOTP(key)
+
+        return totp.now()
+
+    def send_otp_email(self, u_email, u_username, client_socket):
+        # Generate a random password of the specified length
+        password = self.create_verification_code()
+        try:
+            client_ip = client_socket.getpeername()[0]
+
+            # Create a MIME multipart message
+            msg = MIMEMultipart()
+            msg['From'] = 'cloudav03@gmail.com'
+            msg['To'] = u_email
+            msg['Subject'] = 'Two-Factor Authentication'
+
+            # Read HTML content from file
+            with open('../GUI/2fa mail.html', 'r') as file:
+                html_content = file.read()
+
+            # Replace placeholders with actual data
+            html_content = html_content.replace('[Client Name]', u_username)
+            html_content = html_content.replace('[Client Location]', 'Petah Tikva, Israel')
+            html_content = html_content.replace('[Client IP]', client_ip)
+            html_content = html_content.replace('[Client Device]', 'Windows Desktop')
+            html_content = html_content.replace('[Client Time]', datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            html_content = html_content.replace('[Client Code]', password)
+
+            # Attach HTML content
+            msg.attach(MIMEText(html_content, 'html'))
+
+            # Attach the logo image
+            img_path = "../GUI/file_icons/logo_cloudav_2.png"
+            with open(img_path, 'rb') as f:
+                logo_image = MIMEImage(f.read())
+                logo_image.add_header('Content-ID', '<logo>')
+                msg.attach(logo_image)
+
+            # Connect to SMTP server and send email
+            server = smtplib.SMTP('smtp.gmail.com:587')
+            server.ehlo()
+            server.starttls()
+            server.login('cloudav03@gmail.com', 'ivdr wron fhzc xjgo')
+            server.sendmail('cloudav03@gmail.com', u_email, msg.as_string())
+            server.quit()
+
+            print("Email sent successfully!")
+
+            return password
+        except Exception as e:
+            print(e)
+            print("Email failed to send.")
 
 
 if __name__ == "__main__":

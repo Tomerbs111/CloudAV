@@ -5,12 +5,17 @@ import threading
 from tkinter import filedialog as fd
 from datetime import datetime
 import customtkinter
+import pyotp
 from ttkbootstrap.scrolled import ScrolledFrame
 import re
 import ttkbootstrap as ttk
 from customtkinter import *
 from PIL import Image, ImageTk
 import tkinter as tk
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
+import os
 
 from GUI.HomePage import HomePage
 
@@ -75,22 +80,58 @@ class TwoFactorAuthentication(CTkToplevel):
         self.answer_label = CTkLabel(container_frame, text="", text_color="red")
 
     def on_submit(self):
-        if self.code_entries == self.verification_pass:
-            print("gay")
+        entered_code = "".join(entry.get() for entry in self.code_entries)
+        if entered_code == self.verification_pass:
+            print("Verification successful")
+        else:
+            print("Verification failed")
 
+    def create_verification_code(self):
+        key = "TomerBenShushanSecretKey"
+
+        totp = pyotp.TOTP(key)
+        print(totp)
+        return totp.now()
     def send_email(self, u_email):
-        characters = string.digits
-
         # Generate a random password of the specified length
-        password = ''.join(secrets.choice(characters) for i in range(6))
+        password = self.create_verification_code()
         try:
+            # Create a MIME multipart message
+            msg = MIMEMultipart()
+            msg['From'] = 'cloudav03@gmail.com'
+            msg['To'] = u_email
+            msg['Subject'] = 'Two-Factor Authentication'
+
+            # Read HTML content from file
+            with open('GUI/2fa mail.html', 'r') as file:
+                html_content = file.read()
+
+            # Replace placeholders with actual data
+            html_content = html_content.replace('[Client Name]', 'John Doe')
+            html_content = html_content.replace('[Client Location]', 'New York')
+            html_content = html_content.replace('[Client IP]', '192.168.1.1')
+            html_content = html_content.replace('[Client Device]', 'Desktop')
+            html_content = html_content.replace('[Client Time]', '2024-05-10 12:00:00')
+            html_content = html_content.replace('[Client Code]', password)
+
+            # Attach HTML content
+            msg.attach(MIMEText(html_content, 'html'))
+
+            # Attach the logo image
+            img_path = "GUI/file_icons/logo_cloudav_2.png"
+            with open(img_path, 'rb') as f:
+                logo_image = MIMEImage(f.read())
+                logo_image.add_header('Content-ID', '<logo>')
+                msg.attach(logo_image)
+
+            # Connect to SMTP server and send email
             server = smtplib.SMTP('smtp.gmail.com:587')
             server.ehlo()
             server.starttls()
-            server.login('cloudav03@gmail.com', 'CloudAV1234')
-            message = f'Subject: makore msg\n\nyour password is {password}'
-            server.sendmail('makore616@gmail.com', u_email, message)
-            # server.quit()
+            server.login('cloudav03@gmail.com', 'ivdr wron fhzc xjgo')
+            server.sendmail('cloudav03@gmail.com', u_email, msg.as_string())
+            server.quit()
+
             print("Email sent successfully!")
 
             return password
@@ -99,17 +140,17 @@ class TwoFactorAuthentication(CTkToplevel):
             print("Email failed to send.")
 
 
-def run_test():
+def run_test(email):
     root = tk.Tk()
-    email = "chairgood1@gmail.com"
 
-    # Create an instance of TwoFactorAuthentication
+    # Create an instance of TwoFactorAuthentication with the provided email address
     two_factor_auth = TwoFactorAuthentication(root, email)
 
     # Run the Tkinter main loop
     root.mainloop()
 
 
-# Run the test
+# Run the test with the provided email address
 if __name__ == "__main__":
-    run_test()
+    email = "cajoya9761@bsomek.com"  # Provide the email address here
+    run_test(email)

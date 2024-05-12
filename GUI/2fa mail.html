@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            width: 600px;
+            margin: 0 auto;
+        }
+        .logo {
+            text-align: left;
+            margin-bottom: 20px;
+            background-color: #000000;
+        }
+        .message {
+            line-height: 1.6;
+            padding: 0 15px;
+        }
+        .code {
+            background-color: #2563EB;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+            color: #FFFFFF;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <img src="cid:logo" alt="CloudAV" height="120px">
+        </div>
+        <div class="message">
+            <h2>Dear <span id="clientName">[Client Name]</span></h2>
+            <p>We noticed a login from a new device or location for your account and want to make sure it was you.</p>
+            <p><strong>Regional Location:</strong> <span id="clientLocation">[Client Location]</span><br>
+            <strong>IP Address:</strong> <span id="ipAddress">[Client IP]</span><br>
+            <strong>Device:</strong> <span id="clientDevice">[Client Device]</span><br>
+            <strong>Time:</strong> <span id="clientTime">[Client Time]</span></p>
+            <p><br>To enhance the security of your account, we've introduced Two-Factor Authentication (2FA). This added layer of protection requires you to input a unique 6-digit code during login. The code will be sent to your registered email.</p>
+        </div>
+        <div class="code"><span id="clientcode">[Client Code]</span></div>
+        <hr>
+        <p style="color: #A3A3A3; font-size: 14px;">Please do not reply to this message as the response will not be delivered to the originator.</p>
+
+    </div>
+
+    <script>
+        const loginDetails = {
+            "Client_Name": "[Client Name]",
+            "Regional_Location": "[Client Location]",
+            "IP_Address": "[Client IP]",
+            "Device": "[Client Device]",
+            "Time": "[Client Time]",
+            "Code": "[Client Code]"
+        };
+
+        document.getElementById('clientName').innerText = loginDetails.Client_Name;
+        document.getElementById('clientLocation').innerText = loginDetails.Regional_Location;
+        document.getElementById('ipAddress').innerText = loginDetails.IP_Address;
+        document.getElementById('clientDevice').innerText = loginDetails.Device;
+        document.getElementById('clientTime').innerText = loginDetails.Time;
+        document.getElementById('clientcode').innerText = loginDetails.Code;
+    </script>
+</body>
+</html>
