@@ -289,6 +289,9 @@ class Server:
                     rename_data = received_data.get("DATA")
                     self.handle_rename_file_action(client_socket, group_manager, rename_data)
 
+                elif received_data.get("FLAG") == "<GET_USERS>":
+                    self.handle_get_users_action(client_socket, identifier)
+
                 elif received_data.get("FLAG") == "<CREATE_GROUP>":
                     create_group_data = received_data.get("DATA")
                     self.handle_create_group_action(client_socket, identifier, create_group_data)
@@ -479,8 +482,10 @@ class Server:
 
     def handle_get_users_action(self, client_socket, identifier):
         all_users = AuthManager().get_all_users(identifier)
+        print(f"this is all users {all_users}")
         data_to_send = {"FLAG": "<GET_USERS>", "DATA": all_users}
         self.send_data(client_socket, pickle.dumps(data_to_send))
+        print(f"Sent users list to the client.")
 
     def handle_create_group_action(self, client_socket, identifier, group_data):
         user_email = AuthManager().get_email(identifier)

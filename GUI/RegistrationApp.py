@@ -14,11 +14,12 @@ from tkvideo import tkvideo
 
 
 class RegistrationApp(ttk.Frame):
-    def __init__(self, parent, switch_frame, client_communicator):
+    def __init__(self, parent, switch_frame, client_communicator, set_info):
         super().__init__(parent)
         self.parent_app = parent
         self.switch_frame = switch_frame
         self.client_communicator = client_communicator
+        self.set_info = set_info
 
         self.register_frame = ttk.Frame(master=self)
 
@@ -331,6 +332,7 @@ class RegistrationApp(ttk.Frame):
 
                 if identifier:
                     self.l_confirm.configure(text=f"Welcome back {identifier}", bootstyle="success")
+                    self.set_info(identifier, u_email)
                     self.after(1000, lambda: self.switch_frame("HomePage", self.client_communicator))
 
 

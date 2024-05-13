@@ -148,7 +148,7 @@ class ClientCommunication:
             print(f"File '{file_name}' unfavorited.")
 
     def get_all_registered_users(self):
-        data_dict = {"FLAG": '<GET_USERS>'}
+        data_dict = {"FLAG": "<GET_USERS>"}
         self.send_data(self.client_socket, pickle.dumps(data_dict))
 
         received_data = pickle.loads(self.recv_data(self.client_socket))
@@ -199,13 +199,8 @@ class GroupCommunication:
         return data
 
     def get_all_registered_users(self):
-        data_dict = {"FLAG": '<GET_USERS>'}
+        data_dict = {"FLAG": '<GET_USERS>', "DATA": None}
         self.send_data(self.client_socket, pickle.dumps(data_dict))
-
-        received_data = pickle.loads(self.recv_data(self.client_socket))
-        all_users = received_data.get("DATA")
-        return all_users
-
     def handle_create_group_request(self, group_name, group_participants):
         data_dict = {"FLAG": '<CREATE_GROUP>', "DATA": [group_name, group_participants]}
         self.send_data(self.client_socket, pickle.dumps(data_dict))
@@ -239,6 +234,9 @@ class GroupCommunication:
             received_data = pickle.loads(self.recv_data(self.client_socket))
             print(f"Received data from broadcast in client: {received_data}")
             flag = received_data.get("FLAG")
+            if flag == "<GET_USERS>":
+                print("get users")
+
             if flag == "<LEFT>":
                 print("left")
                 self.running = False
@@ -317,6 +315,7 @@ class GroupCommunication:
         data_dict = {"FLAG": '<RENAME>', "DATA": rename_data}
         self.send_data(self.client_socket, pickle.dumps(data_dict))
         print("Files renamed successfully.")
+
 
 
 

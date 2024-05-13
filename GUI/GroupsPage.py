@@ -176,6 +176,10 @@ class GroupsPage(ttk.Frame):
         self.setup_group_file_actions_frame()
         self.setup_folder_manager_frame()
 
+        self.users_data = None
+        self.users_data_event = threading.Event()
+
+
     def setup_folder_manager_frame(self):
         self.folder_frame = CTkFrame(master=self)
         self.folder_frame.place(relx=0, rely=0, relwidth=1, relheight=0.05)
@@ -540,6 +544,12 @@ class GroupsPage(ttk.Frame):
             elif protocol_flag == "<RENAME>":
                 self.get_file_name_to_rename(received_data)
 
+            elif protocol_flag == "<GET_USERS>":
+                self.users_data = received_data
+
+                # Set the event flag to indicate that data is ready
+                self.users_data_event.set()
+
         except pickle.UnpicklingError:
             return
 
@@ -614,3 +624,16 @@ class GroupsPage(ttk.Frame):
 
         except FileNotFoundError:
             return
+
+    def get_all_registered_users(self):
+        # Set the flag to False initially
+        self.users_data_event.clear()
+
+        # Call the function to request user data
+        self.group_communicator.get_all_registered_users()
+
+        # Wait until the event is set (flag received)
+        self.users_data_event.wait()
+
+        # Once the event is set, return the received data
+        return self.users_data

@@ -618,3 +618,6 @@ class HomePage(ttk.Frame):
 
         except FileNotFoundError:
             return
+
+    def get_all_registered_users(self):
+        return self.client_communicator.get_all_registered_users()

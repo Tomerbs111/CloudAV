@@ -10,7 +10,7 @@ from GUI.HomePage import HomePage
 
 
 class Page(ttk.Frame):
-    def __init__(self, master, switch_frame, communicator, current_frame):
+    def __init__(self, master, switch_frame, communicator, current_frame, get_user_info):
         super().__init__(master)
 
         self.create_group_top = None
@@ -24,14 +24,21 @@ class Page(ttk.Frame):
         self.communicator = communicator
         self.current_frame = current_frame
 
+
+
         self.f_data_center = None
         self.f_current_page = None
+
+        self.user_username = None
+        self.user_email = None
+        self.get_user_info = get_user_info
 
         self.setup_data_center_frame()
         self.setup_option_frame()
         self.setup_searchbar_frame()
         self.setup_current_page_frame()
         self.setup_groups_segment()
+
 
     def setup_searchbar_frame(self):
         # Code for setting up the Searchbar frame
@@ -151,18 +158,21 @@ class Page(ttk.Frame):
         file_icon = file_icon.resize((16, 16))
         file_icon = ImageTk.PhotoImage(file_icon)
 
-        menu.add_command(label=" New Folder", image=new_folder_icon, compound=tk.LEFT, command=self.setup_new_folder_dialog,
+        menu.add_command(label=" New Folder", image=new_folder_icon, compound=tk.LEFT,
+                         command=self.setup_new_folder_dialog,
                          font=("Arial", 14))
         menu.add_separator()
         menu.add_command(label=" Upload File", image=file_icon, compound=tk.LEFT, command=self.handle_send_file_request,
                          font=("Arial", 14))
-        menu.add_command(label=" Upload Folder", image=upload_folder_icon, compound=tk.LEFT, command=self.handle_upload_folder_request,
+        menu.add_command(label=" Upload Folder", image=upload_folder_icon, compound=tk.LEFT,
+                         command=self.handle_upload_folder_request,
                          font=("Arial", 14))
 
         x = self.f_options.winfo_rootx() + self.add_button.winfo_x()
         y = self.f_options.winfo_rooty() + self.add_button.winfo_y()
 
         self.f_options.after(100, menu.post(x, y))
+
     def setup_current_page_frame(self):
         self.f_current_page = ttk.Frame(master=self.f_data_center, style="info")
         self.f_current_page.pack(side="left", fill="both", expand=True, padx=10, pady=10)
@@ -180,6 +190,8 @@ class Page(ttk.Frame):
         ).pack(side='left', pady=5, fill='x', padx=10)
 
     def switch_to_groups_page(self, group_name, permissions, room_admin):
+        self.user_username, self.user_email = self.get_user_info()
+        print(self.user_username, self.user_email)
         if self.current_frame.__class__.__name__ != "GroupsPage":
             print(f"Switching to {group_name}")
             self.switch_frame("GroupsPage", self.communicator, group_name, permissions, room_admin)
@@ -248,12 +260,11 @@ class Page(ttk.Frame):
 
     def handle_create_group_window(self):
         if self.create_group_top is None or not self.create_group_top.winfo_exists():
-            try:
-                all_user_list = self.communicator.get_all_registered_users()
-            except:
-                return None
+            print("1")
+            all_user_list = self.current_frame.get_all_registered_users()
+            print("2")
             self.create_group_top = CreateGroupWin(self, all_user_list)
-
+            print("3")
             # Wait for the window to be closed or destroyed
             self.create_group_top.wait_window()
 
@@ -275,7 +286,8 @@ class Page(ttk.Frame):
                     text=group_name,
                     compound='left',
                     fg_color="transparent",
-                    command=lambda button_text=group_name: self.switch_to_groups_page(button_text, permissions)
+                    command=lambda button_text=group_name: self.switch_to_groups_page(button_text, permissions,
+                                                                                      self.user_email)
 
                 ).pack(side='top', pady=5, anchor='w', fill='x', padx=10)
 
@@ -443,13 +455,25 @@ class MyApp(ttk.Window):
         self.loaded = False
         self.client_communicator = client_communicator
         self.group_communicator = group_communicator
-        self.page = Page(self, self.switch_frame, self.client_communicator, self.current_frame)
 
-        self.switch_frame("RegistrationApp", self.client_communicator)
+        self.user_username = None
+        self.user_email = None
+
+
+        self.switch_frame("RegistrationApp", self.client_communicator, self.set_user_info)
+        self.page = Page(self, self.switch_frame, self.client_communicator, self.current_frame, self.get_user_info)
+
+
+    def set_user_info(self, username, email):
+        self.user_username = username
+        self.user_email = email
+
+    def get_user_info(self):
+        return self.user_username, self.user_email
 
     def switch_frame(self, frame_class, *args):
         if frame_class == "RegistrationApp":
-            new_frame = RegistrationApp(self, self.switch_frame, self.client_communicator)
+            new_frame = RegistrationApp(self, self.switch_frame, self.client_communicator, self.set_user_info)
 
             if self.current_frame:
                 self.current_frame.pack_forget()
