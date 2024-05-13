@@ -517,8 +517,10 @@ class Server:
             rooms_dict = {}
             for room in rooms_containing_user:
                 room_permissions = room_manager.get_room_permissions(room)
+                # Split the permission string into a list of strings
+                permissions_list = room_permissions[0].split(',')
                 room_admin = room_manager.get_room_admin(room)
-                rooms_dict[room] = [room_permissions, room_admin]
+                rooms_dict[room] = [permissions_list, room_admin]
             # Pickle and send the dictionary over the socket
             data_to_send = {"FLAG": "<GET_ROOMS>", "DATA": rooms_dict}
             self.send_data(client_socket, pickle.dumps(data_to_send))
@@ -528,7 +530,6 @@ class Server:
         except Exception as e:
             print(f"Error in fetch_rooms_for_user: {e}")
             client_socket.close()
-
     def is_user_admin(self, username, group_name):
         try:
             room_manager = RoomManager()

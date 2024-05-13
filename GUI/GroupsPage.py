@@ -1,10 +1,12 @@
 import pickle
 import threading
+import tkinter as tk
 from tkinter import filedialog as fd
 import ttkbootstrap as ttk
 from customtkinter import *
 from PIL import Image, ImageTk
 import datetime
+from ttkbootstrap.toast import ToastNotification
 
 
 class GroupFileFrame(ttk.Frame):
@@ -154,12 +156,16 @@ class GroupFileFrame(ttk.Frame):
 class GroupsPage(ttk.Frame):
     def __init__(self, parent, switch_frame, group_communicator, group_name, permissions, admin):
         super().__init__(parent)
+        self.owner = "You"
         self.parent_app = parent
         self.switch_frame = switch_frame
         self.group_name = group_name
         self.group_communicator = group_communicator
+
         self.permissions = permissions
+        print(self.permissions)
         self.admin = admin
+        self.is_admin = False
 
         # setting up variables
         self.rename_button = None
@@ -178,6 +184,18 @@ class GroupsPage(ttk.Frame):
 
         self.users_data = None
         self.users_data_event = threading.Event()
+
+    def can_upload(self):
+        return self.permissions[0] == '1'
+
+    def can_download(self):
+        return self.permissions[1] == '1'
+
+    def can_rename(self):
+        return self.permissions[2] == '1'
+
+    def can_delete(self):
+        return self.permissions[3] == '1'
 
 
     def setup_folder_manager_frame(self):
@@ -416,6 +434,10 @@ class GroupsPage(ttk.Frame):
                 self.add_file_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner)
 
     def handle_send_file_request(self):
+        if not self.can_upload() and self.is_admin is False:
+            print("You are not authorized to upload data.")
+            tk.messagebox.showinfo(title="Error", message="You are not authorized to upload data.")
+            return
         filetypes = (
             ('All files', '*.*'),
             ('text files', '*.txt'),
@@ -442,6 +464,10 @@ class GroupsPage(ttk.Frame):
         self.add_file_frame(short_filename, formatted_file_size, short_file_date, group_file_owner="self")
 
     def handle_download_request_group(self):
+        if not self.can_download() and self.is_admin is False:
+            print("You are not authorized to download data.")
+            tk.messagebox.showinfo(title="Error", message="You are not authorized to download data.")
+            return
         select_file_frames = self.get_checked_file_frames()
         select_file_names_lst = [file_frame.get_filename() for file_frame in select_file_frames]
 
@@ -462,6 +488,10 @@ class GroupsPage(ttk.Frame):
                 print(f"File '{indiv_filename}' received successfully.")
 
     def handle_delete_request_group(self):
+        if not self.can_delete() and self.is_admin is False:
+            print("You are not authorized to delete data.")
+            tk.messagebox.showinfo(title="Error", message="You are not authorized to delete data.")
+            return
         frames_to_delete = self.get_checked_file_frames()
         names_to_delete_lst = []
         folders_to_delete_lst = []
@@ -487,6 +517,10 @@ class GroupsPage(ttk.Frame):
 
     def handle_rename_request_group(self):
         try:
+            if not self.can_rename() and self.is_admin is False:
+                print("You are not authorized to rename data.")
+                tk.messagebox.showinfo(title="Error", message="You are not authorized to rename data.")
+                return
             file_frame = self.get_checked_file_frames()[0]
             old_name = file_frame.get_filename()
 
@@ -581,6 +615,10 @@ class GroupsPage(ttk.Frame):
 
     def handle_folder_upload(self):
         try:
+            if not self.can_upload() and self.is_admin is False:
+                print("You are not authorized to upload data.")
+                tk.messagebox.showerror("Error", "You are not authorized to upload data.")
+                return
             count = 0
             folder_path = fd.askdirectory(title='Select a folder')
             if folder_path:
@@ -637,3 +675,7 @@ class GroupsPage(ttk.Frame):
 
         # Once the event is set, return the received data
         return self.users_data
+
+    def check_if_admin(self, user_email):
+        if user_email == self.admin:
+            self.is_admin = True

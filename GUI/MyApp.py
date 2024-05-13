@@ -191,7 +191,6 @@ class Page(ttk.Frame):
 
     def switch_to_groups_page(self, group_name, permissions, room_admin):
         self.user_username, self.user_email = self.get_user_info()
-        print(self.user_username, self.user_email)
         if self.current_frame.__class__.__name__ != "GroupsPage":
             print(f"Switching to {group_name}")
             self.switch_frame("GroupsPage", self.communicator, group_name, permissions, room_admin)
@@ -205,7 +204,10 @@ class Page(ttk.Frame):
             threading.Thread(target=self.current_frame.group_communicator.handle_join_group_request,
                              args=(group_name,)).start()
 
+        self.current_frame.check_if_admin(self.user_email)
+
     def switch_to_home_page(self):
+        self.user_username, self.user_email = self.get_user_info()
         if self.current_frame.__class__.__name__ == "GroupsPage":
             threading.Thread(target=self.current_frame.group_communicator.handle_leave_group_request).start()
         if self.current_frame.__class__.__name__ != "HomePage":
