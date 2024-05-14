@@ -3,7 +3,7 @@ import threading
 
 
 class GroupUser:
-    def __init__(self, user_socket: socket, user_email: str, group_name: str):
+    def __init__(self, user_socket: socket, user_email: str, group_name: str, aes_key):
         """
         Initialize the GroupUser object.
         every group user has its own socket, user unique email, and if the user created the group he will be the admin
@@ -16,3 +16,4 @@ class GroupUser:
         self.user_socket = user_socket
         self.user_email = user_email
         self.group_name = group_name
+        self.aes_key = aes_key

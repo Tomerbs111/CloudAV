@@ -191,7 +191,7 @@ class Server:
                 for g_users in self.clients_list:
                     try:
                         if g_users.user_socket != sender_socket:
-                            self.send_data(g_users.user_socket, pickle.dumps(file_data))
+                            self.send_data(g_users.user_socket, pickle.dumps(file_data), g_users.aes_key)
 
                     except Exception as e:
                         print(f"Error in broadcast_files: {e}")
@@ -560,14 +560,14 @@ class Server:
 
             if not user_found:
                 # If the user is not in the list, append with the received group name
-                self.clients_list.append(GroupUser(client_socket, user_email, group_name))
+                self.clients_list.append(GroupUser(client_socket, user_email, group_name, aes_key))
 
             self.send_data(client_socket, pickle.dumps({"FLAG": "<JOINED>", "DATA": user_email}), aes_key)
             print(f"User {user_email} joined the group '{group_name}'.")
 
             group_handler = threading.Thread(
                 target=self.handle_group_requests,
-                args=(client_socket, identifier)
+                args=(client_socket, identifier, aes_key)
             )
             group_handler.start()
 
@@ -584,7 +584,7 @@ class Server:
             self.send_data(client_socket, pickle.dumps({"FLAG": "<LEFT>"}), aes_key)
             client_handler = threading.Thread(
                 target=self.handle_requests,
-                args=(client_socket, identifier)
+                args=(client_socket, identifier, aes_key)
             )
             client_handler.start()
 
