@@ -354,16 +354,16 @@ class HomePage(ttk.Frame):
 
         return short_filename, formatted_file_size, short_file_date
 
-    def handle_add_new_folder_request(self, folder_name):
+    def handle_add_new_folder_request(self, folder_name, size):
         real_folder_name = folder_name.replace(" <folder>", "")
+        folder_size = size
         folder_date = datetime.datetime.now()
-        folder_size = "0"
         folder_folder = self.get_current_folder()
 
         formatted_folder_date = self.set_date_format(folder_date)
 
         add_folder_thread = threading.Thread(target=self.client_communicator.handle_add_new_folder_request,
-                                             args=(folder_name, folder_size, folder_date, folder_folder))
+                                             args=(folder_name, folder_size + " items", folder_date, folder_folder))
         add_folder_thread.start()
 
         self.add_folder_frame(real_folder_name, folder_size, formatted_folder_date)
@@ -590,7 +590,7 @@ class HomePage(ttk.Frame):
                     if os.path.isdir(path):  # If it's a folder
                         folder_name = os.path.basename(path) + " <folder>"
                         folder_date = datetime.datetime.now()
-                        folder_size = len(os.listdir(path))  # Count the number of files in the folder
+                        folder_size = len(os.listdir(path))
                         formatted_folder_date = self.set_date_format(folder_date)
 
                         # Add folder to the database
@@ -618,7 +618,8 @@ class HomePage(ttk.Frame):
 
                         favorite = 0
 
-                self.handle_add_new_folder_request(os.path.basename(folder_path) + " <folder>")
+                self.handle_add_new_folder_request(os.path.basename(folder_path) + " <folder>",
+                                                   len(os.listdir(folder_path)))
 
         except FileNotFoundError:
             return
