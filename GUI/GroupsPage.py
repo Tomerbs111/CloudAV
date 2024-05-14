@@ -412,7 +412,7 @@ class GroupsPage(ttk.Frame):
         self.file_frame_counter += 1
 
     def get_file_name_to_rename(self, received_data):
-        old_name, new_name = received_data
+        old_name, new_name, folder = received_data
         for file_frame in self.group_file_frames:
             filename = file_frame.get_filename()
             if filename == old_name:

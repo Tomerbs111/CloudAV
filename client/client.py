@@ -4,32 +4,25 @@ import pickle
 import struct
 import threading
 
+from CommsFunctions import CommsFunctions
+from EncryptionFunctions import EncryptionFunctions
 from GUI.MyApp import MyApp
 
 
 class ClientCommunication:
-    def __init__(self, client_socket: socket):
+    def __init__(self, client_socket: socket, aes_key):
         self.client_socket = client_socket
+        self.aes_key = aes_key
+        # add aes key here
 
     def send_data(self, client_socket: socket, data: str | bytes):
-        if isinstance(data, str):
-            data = pickle.dumps(data)
-
-        data_len = len(data).to_bytes(4, byteorder='big')
-        client_socket.send(data_len + data)
+        encrypted_data = EncryptionFunctions.encrypt_AES_message(data, self.aes_key)
+        CommsFunctions.send_data(client_socket, encrypted_data)
 
     def recv_data(self, client_socket: socket):
-        data_len = client_socket.recv(4)
-
-        while len(data_len) < 4:
-            data_len += client_socket.recv(4 - len(data_len))
-        len_to_int = int.from_bytes(data_len, byteorder='big')
-        data = client_socket.recv(len_to_int)
-
-        while len(data) < len_to_int:
-            data += client_socket.recv(len_to_int - len(data))
-
-        return data
+        encrypted_data = CommsFunctions.recv_data(client_socket)
+        decrypted_data = EncryptionFunctions.decrypt_AES_message(encrypted_data, self.aes_key)
+        return decrypted_data
 
     def handle_client_register(self, attempt_type, u_email, u_username, u_password):
         field_dict = {
@@ -124,8 +117,8 @@ class ClientCommunication:
         except Exception as e:
             print(f"Error in handle_presaved_files_client: {e}")
 
-    def handle_delete_request_client(self, select_file_names_lst):
-        data_dict = {"FLAG": '<DELETE>', "DATA": select_file_names_lst}
+    def handle_delete_request_client(self, select_file_names_lst, folders_to_delete, current_folder):
+        data_dict = {"FLAG": '<DELETE>', "DATA": [select_file_names_lst, folders_to_delete, current_folder]}
         self.send_data(self.client_socket, pickle.dumps(data_dict))
         print("Files deleted successfully.")
 
@@ -170,8 +163,10 @@ class ClientCommunication:
 
 
 class GroupCommunication:
-    def __init__(self, client_socket, handle_broadcast_requests):
+    def __init__(self, client_socket, handle_broadcast_requests, aes_key):
         self.client_socket = client_socket
+        # add aes key here
+        self.aes_key = aes_key
         self.handle_broadcast_requests = handle_broadcast_requests  # Define the callback function
 
         self.receive_thread = None  # Thread for receiving broadcasted files
@@ -179,28 +174,18 @@ class GroupCommunication:
         self.lock = threading.Lock()  # Add a lock for synchronization
 
     def send_data(self, client_socket: socket, data: str | bytes):
-        if isinstance(data, str):
-            data = pickle.dumps(data)
-
-        data_len = len(data).to_bytes(4, byteorder='big')
-        client_socket.send(data_len + data)
+        encrypted_data = EncryptionFunctions.encrypt_AES_message(data, self.aes_key)
+        CommsFunctions.send_data(client_socket, encrypted_data)
 
     def recv_data(self, client_socket: socket):
-        data_len = client_socket.recv(4)
-
-        while len(data_len) < 4:
-            data_len += client_socket.recv(4 - len(data_len))
-        len_to_int = int.from_bytes(data_len, byteorder='big')
-        data = client_socket.recv(len_to_int)
-
-        while len(data) < len_to_int:
-            data += client_socket.recv(len_to_int - len(data))
-
-        return data
+        encrypted_data = CommsFunctions.recv_data(client_socket)
+        decrypted_data = EncryptionFunctions.decrypt_AES_message(encrypted_data, self.aes_key)
+        return decrypted_data
 
     def get_all_registered_users(self):
         data_dict = {"FLAG": '<GET_USERS>', "DATA": None}
         self.send_data(self.client_socket, pickle.dumps(data_dict))
+
     def handle_create_group_request(self, group_name, group_participants):
         data_dict = {"FLAG": '<CREATE_GROUP>', "DATA": [group_name, group_participants]}
         self.send_data(self.client_socket, pickle.dumps(data_dict))
@@ -317,9 +302,6 @@ class GroupCommunication:
         print("Files renamed successfully.")
 
 
-
-
-
 # ------------Client setup------------
 HOST = '127.0.0.1'  # '192.168.1.152'
 PORT = 40301
@@ -329,8 +311,12 @@ class MainClient:
     def __init__(self):
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_socket.connect((HOST, PORT))
-        self.client_communicator = ClientCommunication(self.client_socket)
-        self.group_communicator = GroupCommunication(self.client_socket, None)
+
+        # lib.start server coms, save aes key
+        self.aes_key = EncryptionFunctions.start_server_communication(self.client_socket)
+
+        self.client_communicator = ClientCommunication(self.client_socket, self.aes_key)  # save aes key as param
+        self.group_communicator = GroupCommunication(self.client_socket, None, self.aes_key)
 
     def run(self):
         try:
