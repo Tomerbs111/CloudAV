@@ -254,6 +254,11 @@ class Server:
                     self.handle_join_group_action(client_socket, identifier, join_group_data, aes_key)
                     break
 
+                elif received_data.get("FLAG") == "<LOGOUT>":
+                    self.handle_logout_action(client_socket)
+                    break
+
+
         except (socket.error, IOError) as e:
             print(f"Error in handle_requests: {e}")
             client_socket.close()
@@ -298,6 +303,10 @@ class Server:
 
                 elif received_data.get("FLAG") == "<LEAVE_GROUP>":
                     self.handle_leave_group_action(client_socket, identifier, aes_key)
+                    break
+
+                elif received_data.get("FLAG") == "<LOGOUT>":
+                    self.handle_logout_action(client_socket)
                     break
 
         except (socket.error, IOError) as e:
@@ -656,6 +665,16 @@ class Server:
             print(e)
             print("Email failed to send.")
 
+    def handle_logout_action(self, client_socket):
+        try:
+            for group_user in self.clients_list:
+                if group_user.user_socket == client_socket:
+                    self.clients_list.remove(group_user)
+                    break
+            print("User logged out successfully.")
+        except Exception as e:
+            print(f"Error in handle_logout_action: {e}")
+            client_socket.close()
 
 if __name__ == "__main__":
     server = Server()

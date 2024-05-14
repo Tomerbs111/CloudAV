@@ -3,6 +3,7 @@ import os
 import pickle
 import struct
 import threading
+import time
 
 from CommsFunctions import CommsFunctions
 from EncryptionFunctions import EncryptionFunctions
@@ -161,6 +162,11 @@ class ClientCommunication:
         all_rooms = received_data.get("DATA")
         return all_rooms
 
+    def log_out(self):
+        data_dict = {"FLAG": "<LOGOUT>"}
+        self.send_data(self.client_socket, pickle.dumps(data_dict))
+        print("Logged out successfully.")
+
 
 class GroupCommunication:
     def __init__(self, client_socket, handle_broadcast_requests, aes_key):
@@ -215,22 +221,26 @@ class GroupCommunication:
             self.receive_thread.join()
 
     def handle_broadcasted_group_data(self, on_broadcast_callback):
-        while self.running:
-            received_data = pickle.loads(self.recv_data(self.client_socket))
-            print(f"Received data from broadcast in client: {received_data}")
-            flag = received_data.get("FLAG")
-            if flag == "<GET_USERS>":
-                print("get users")
+        try:
+            while self.running:
+                received_data = pickle.loads(self.recv_data(self.client_socket))
+                print(f"Received data from broadcast in client: {received_data}")
+                flag = received_data.get("FLAG")
+                if flag == "<GET_USERS>":
+                    print("get users")
 
-            if flag == "<LEFT>":
-                print("left")
-                self.running = False
-                break
+                if flag == "<LEFT>":
+                    print("left")
+                    self.running = False
+                    break
 
-            # Check if the callback is set before calling it
-            if on_broadcast_callback:
-                on_broadcast_callback(received_data)
-
+                # Check if the callback is set before calling it
+                if on_broadcast_callback:
+                    on_broadcast_callback(received_data)
+        except Exception as e:
+            return
+        finally:
+            self.client_socket.close()
     def handle_add_new_folder_request(self, real_folder_name, folder_size, folder_date, folder_folder, group_name):
         data_dict = {"FLAG": '<CREATE_FOLDER_GROUP>',
                      "DATA": [real_folder_name, folder_size, folder_date, folder_folder, group_name]}
@@ -301,6 +311,17 @@ class GroupCommunication:
         self.send_data(self.client_socket, pickle.dumps(data_dict))
         print("Files renamed successfully.")
 
+    def log_out(self):
+        try:
+            self.running = False
+            data_dict = {"FLAG": '<LOG_OUT>'}
+            self.send_data(self.client_socket, pickle.dumps(data_dict))
+            self.receive_thread.join()
+            self.client_socket.close()
+            print("Logged out successfully.")
+        except Exception as e:
+            print(f"Error while logging out: {e}")
+
 
 # ------------Client setup------------
 HOST = '127.0.0.1'  # '192.168.1.152'
@@ -323,7 +344,6 @@ class MainClient:
             while True:
                 app = MyApp(self.client_communicator, self.group_communicator)
                 app.mainloop()
-                self.client_socket.sendall("X".encode())
                 self.client_socket.close()
                 break
         except (socket.error, IOError) as e:

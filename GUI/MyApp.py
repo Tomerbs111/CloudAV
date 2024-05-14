@@ -134,6 +134,7 @@ class Page(ttk.Frame):
             text="Log out",
             image=CTkImage(Image.open("../GUI/file_icons/log_out_icon.png"), size=(20, 20)),
             compound='left',
+            command=self.handle_log_out_action,
             anchor='w',
             fg_color='transparent'
 
@@ -242,6 +243,10 @@ class Page(ttk.Frame):
 
         # Focus on the add_folder_dialog window
         self.add_folder_dialog.focus_set()
+
+    def handle_log_out_action(self):
+        self.communicator.log_out()
+        self.switch_frame("Logout", self.communicator)
 
     def handle_add_new_folder_request(self):
         folder_name = self.folder_name_entry.get().strip()
@@ -513,3 +518,6 @@ class MyApp(ttk.Window):
             if not self.loaded:
                 self.page.after(500, self.page.get_group_names)
                 self.loaded = True
+
+        elif frame_class == "Logout":
+            self.destroy()

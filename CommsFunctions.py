@@ -13,14 +13,17 @@ class CommsFunctions:
 
     @staticmethod
     def recv_data(client_socket: socket.socket):
-        data_len = client_socket.recv(4)
+        try:
+            data_len = client_socket.recv(4)
 
-        while len(data_len) < 4:
-            data_len += client_socket.recv(4 - len(data_len))
-        len_to_int = int.from_bytes(data_len, byteorder='big')
-        data = client_socket.recv(len_to_int)
+            while len(data_len) < 4:
+                data_len += client_socket.recv(4 - len(data_len))
+            len_to_int = int.from_bytes(data_len, byteorder='big')
+            data = client_socket.recv(len_to_int)
 
-        while len(data) < len_to_int:
-            data += client_socket.recv(len_to_int - len(data))
+            while len(data) < len_to_int:
+                data += client_socket.recv(len_to_int - len(data))
 
-        return data
+            return data
+        except ConnectionAbortedError as e:
+            print(f"Error in recv_data: {e}")
