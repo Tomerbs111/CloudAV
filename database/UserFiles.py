@@ -47,7 +47,7 @@ class UserFiles:
     '''
 
     RENAME_FILE_QUERY = '''
-        UPDATE Files SET Name = ? WHERE Owner = ? AND Name = ?;
+        UPDATE Files SET Name = ? WHERE Owner = ? AND Name = ? AND Folder = ?;
     '''
 
     GET_FAVORITE_STATUS_QUERY = '''
@@ -64,6 +64,10 @@ class UserFiles:
 
     SET_FOLDER_QUERY = '''
         UPDATE Files SET Folder = ? WHERE Owner = ? AND Name = ?;
+    '''
+
+    RENAME_FOLDER_FILES_QUERY = '''
+        UPDATE Files SET Folder = ? WHERE Owner = ? AND Folder = ?;
     '''
 
     def __init__(self, userid: str, database_path='../database/User_info.db'):
@@ -101,8 +105,12 @@ class UserFiles:
         self._execute_query(self.REMOVE_FOLDER_QUERY, (self.userid_db, folder,))
         self.conn.commit()
 
-    def rename_file(self, old_name: str, new_name: str):
-        self._execute_query(self.RENAME_FILE_QUERY, (new_name, self.userid_db, old_name))
+    def rename_file(self, old_name: str, new_name: str, folder: str):
+        self._execute_query(self.RENAME_FILE_QUERY, (new_name, self.userid_db, old_name, folder))
+        self.conn.commit()
+
+    def rename_folder_files(self, old_folder_name: str, new_folder_name: str):
+        self._execute_query(self.RENAME_FOLDER_FILES_QUERY, (new_folder_name, self.userid_db, old_folder_name))
         self.conn.commit()
 
     def get_file_data(self, file_name: str, folder: str) -> bytes:

@@ -50,6 +50,10 @@ class GroupFiles:
         SELECT Name FROM GroupFiles WHERE GroupName = ? AND Folder = ?;    
     '''
 
+    RENAME_FOLDER_FILES_QUERY = '''
+        UPDATE GroupFiles SET Folder = ? WHERE Owner = ? AND GroupName = ? AND Folder = ?;
+    '''
+
     def __init__(self, userid: str, database_path='../database/User_info.db'):
         self.conn = sqlite3.connect(database_path)
         self.cur = self.conn.cursor()
@@ -104,6 +108,10 @@ class GroupFiles:
             # Handle the case where no matching records are found
             return None  # or raise an exception or return a default value
 
+    def rename_folder_files(self, group_name: str, old_folder_name: str, new_folder_name: str):
+        self._execute_query(self.RENAME_FOLDER_FILES_QUERY,
+                            (new_folder_name, self.owner_id, group_name, old_folder_name))
+        self.conn.commit()
     def close_connection(self):
         self.conn.close()
 

@@ -521,10 +521,14 @@ class HomePage(ttk.Frame):
 
             if new_name:
                 new_name_with_format = f"{new_name}{file_format}"
+                if file_frame.is_folder:
+                    old_name += " <folder>"
+                    new_name += " <folder>"
+                    new_name_with_format = new_name.replace(" <folder>", "")
 
                 rename_thread = threading.Thread(
                     target=self.client_communicator.handle_rename_request_client,
-                    args=((old_name, new_name_with_format),))
+                    args=((old_name, new_name, self.get_current_folder()),))
                 rename_thread.start()
 
                 file_frame.set_filename(new_name_with_format)

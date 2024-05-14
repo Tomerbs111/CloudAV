@@ -4,6 +4,9 @@ import smtplib
 import socket
 import struct
 import threading
+
+from CommsFunctions import CommsFunctions
+from EncryptionFunctions import EncryptionFunctions
 from database.AuthManager import AuthManager
 from database.GroupFiles import GroupFiles
 from database.UserFiles import UserFiles
@@ -33,29 +36,22 @@ class Server:
         # Message queue for broadcasting
         self.file_queue = Queue()
 
+        # call make keys
+        self.public_key, self.private_key = EncryptionFunctions.make_keys()
+
         # Create a thread for broadcasting messages
         self.broadcast_thread = threading.Thread(target=self.broadcast_files)
         self.broadcast_thread.start()
 
-    def send_data(self, client_socket: socket, data: str | bytes):
-        if isinstance(data, str):
-            data = pickle.dumps(data)
+    # insert encryption/decryption functions here
+    def send_data(self, client_socket: socket, data: str | bytes, aes_key):
+        encrypted_data = EncryptionFunctions.encrypt_AES_message(data, aes_key)
+        CommsFunctions.send_data(client_socket, encrypted_data)
 
-        data_len = len(data).to_bytes(4, byteorder='big')
-        client_socket.send(data_len + data)
-
-    def recv_data(self, client_socket: socket):
-        data_len = client_socket.recv(4)
-
-        while len(data_len) < 4:
-            data_len += client_socket.recv(4 - len(data_len))
-        len_to_int = int.from_bytes(data_len, byteorder='big')
-        data = client_socket.recv(len_to_int)
-
-        while len(data) < len_to_int:
-            data += client_socket.recv(len_to_int - len(data))
-
-        return data
+    def recv_data(self, client_socket: socket, aes_key):
+        encrypted_data = CommsFunctions.recv_data(client_socket)
+        decrypted_data = EncryptionFunctions.decrypt_AES_message(encrypted_data, aes_key)
+        return decrypted_data
 
     def start(self):
         try:
@@ -63,11 +59,17 @@ class Server:
                 client_socket, client_address = self.server_socket.accept()
                 print(f"Accepted connection from {client_address}")
 
+                publicKeyString = self.public_key.save_pkcs1().decode()  # Decoding the public key to str so we can send it
+                CommsFunctions.send_data(client_socket, publicKeyString)  # Sending the public key
+
+                aesKeyEncrypted = CommsFunctions.recv_data(client_socket)  # Getting the aes key from the client.
+                aes_key = EncryptionFunctions.decrypt_RSA_message(aesKeyEncrypted, self.private_key)
+
                 identifier = None
 
                 client_register_login_handler = threading.Thread(
                     target=self.handle_register_login,
-                    args=(client_socket, identifier)
+                    args=(client_socket, identifier, aes_key)  # aseKey as parameter
                 )
                 client_register_login_handler.start()
 
@@ -78,10 +80,10 @@ class Server:
         finally:
             self.server_socket.close()
 
-    def handle_register_login(self, client_socket, identifier):
+    def handle_register_login(self, client_socket, identifier, aes_key):
         try:
             while True:
-                received_data = pickle.loads(self.recv_data(client_socket))
+                received_data = pickle.loads(self.recv_data(client_socket, aes_key))
                 authentication_flag = received_data.get("FLAG")
                 field_dict = received_data.get("DATA")
                 db_authentication = AuthManager()
@@ -99,32 +101,30 @@ class Server:
 
                     answer_to_send = self.handle_login_info(u_email, u_password, db_authentication)
 
-
-
-                self.send_data(client_socket, pickle.dumps({"FLAG": "<SUCCESS>", "DATA": None}))
+                self.send_data(client_socket, pickle.dumps({"FLAG": "<SUCCESS>", "DATA": None}), aes_key)
                 if answer_to_send.get("FLAG") == "<SUCCESS>":
                     identifier = answer_to_send.get("DATA")
                     u_username = db_authentication.get_username(identifier)
                     otp_password = self.send_otp_email(u_email, u_username, client_socket)
 
                     while True:
-                        client_response = pickle.loads(self.recv_data(client_socket))
+                        client_response = pickle.loads(self.recv_data(client_socket, aes_key))
                         print(client_response.get("DATA"))
                         print(otp_password)
                         if client_response.get("DATA") == otp_password:
                             print(f"User {u_email} logged in.")
-                            self.send_data(client_socket, pickle.dumps({"FLAG": "<2FA_SUCCESS>", "DATA": db_authentication.get_username(identifier)}))
+                            self.send_data(client_socket, pickle.dumps(
+                                {"FLAG": "<2FA_SUCCESS>", "DATA": db_authentication.get_username(identifier)}), aes_key)
                             break
 
                         else:
-                            self.send_data(client_socket, pickle.dumps({"FLAG": "<2FA_FAILED>", "DATA": None}))
-
+                            self.send_data(client_socket, pickle.dumps({"FLAG": "<2FA_FAILED>", "DATA": None}), aes_key)
 
                 if identifier:
                     # Start a new thread to handle the client
                     client_handler = threading.Thread(
                         target=self.handle_requests,
-                        args=(client_socket, identifier)
+                        args=(client_socket, identifier, aes_key)
                     )
 
                     client_handler.start()
@@ -199,17 +199,17 @@ class Server:
         except Exception as e:
             print(f"Error in broadcast_files thread: {e}")
 
-    def handle_requests(self, client_socket, identifier):
+    def handle_requests(self, client_socket, identifier, aes_key):
         try:
             user_files_manager = UserFiles(identifier)
 
             while True:
                 action = None
-                received_data = pickle.loads(self.recv_data(client_socket))
+                received_data = pickle.loads(self.recv_data(client_socket, aes_key))
 
                 if received_data.get("FLAG") == "<NARF>":
                     narf_data = received_data.get("DATA")
-                    self.handle_presaved_files_action(client_socket, user_files_manager, narf_data)
+                    self.handle_presaved_files_action(client_socket, user_files_manager, narf_data, aes_key)
 
                 elif received_data.get("FLAG") == "<CREATE_FOLDER>":
                     create_folder_data = received_data.get("DATA")
@@ -221,7 +221,7 @@ class Server:
 
                 elif received_data.get("FLAG") == "<RECV>":
                     recv_data = received_data.get("DATA")
-                    self.handle_receive_files_action(client_socket, user_files_manager, recv_data)
+                    self.handle_receive_files_action(client_socket, user_files_manager, recv_data, aes_key)
 
                 elif received_data.get("FLAG") == "<DELETE>":
                     delete_data = received_data.get("DATA")
@@ -240,34 +240,34 @@ class Server:
                     self.handle_unfavorite_file_action(client_socket, user_files_manager, unfavorite_data)
 
                 elif received_data.get("FLAG") == "<GET_USERS>":
-                    self.handle_get_users_action(client_socket, identifier)
+                    self.handle_get_users_action(client_socket, identifier, aes_key)
 
                 elif received_data.get("FLAG") == "<CREATE_GROUP>":
                     create_group_data = received_data.get("DATA")
                     self.handle_create_group_action(client_socket, identifier, create_group_data)
 
                 elif received_data.get("FLAG") == "<GET_ROOMS>":
-                    self.handle_get_rooms_action(client_socket, identifier)
+                    self.handle_get_rooms_action(client_socket, identifier, aes_key)
 
                 elif received_data.get("FLAG") == "<JOIN_GROUP>":
                     join_group_data = received_data.get("DATA")
-                    self.handle_join_group_action(client_socket, identifier, join_group_data)
+                    self.handle_join_group_action(client_socket, identifier, join_group_data, aes_key)
                     break
 
         except (socket.error, IOError) as e:
             print(f"Error in handle_requests: {e}")
             client_socket.close()
 
-    def handle_group_requests(self, client_socket: socket, identifier):
+    def handle_group_requests(self, client_socket: socket, identifier, aes_key):
         try:
             group_manager = GroupFiles(AuthManager().get_email(identifier))
 
             while True:
-                received_data = pickle.loads(self.recv_data(client_socket))
+                received_data = pickle.loads(self.recv_data(client_socket, aes_key))
 
                 if received_data.get("FLAG") == "<NARF>":
                     narf_data = received_data.get("DATA")
-                    self.handle_presaved_files_action(client_socket, group_manager, narf_data)
+                    self.handle_presaved_files_action(client_socket, group_manager, narf_data, aes_key)
 
                 elif received_data.get("FLAG") == "<CREATE_FOLDER_GROUP>":
                     create_folder_data = received_data.get("DATA")
@@ -275,7 +275,7 @@ class Server:
 
                 elif received_data.get("FLAG") == "<RECV>":
                     recv_data = received_data.get("DATA")
-                    self.handle_receive_files_action(client_socket, group_manager, recv_data)
+                    self.handle_receive_files_action(client_socket, group_manager, recv_data, aes_key)
 
                 elif received_data.get("FLAG") == "<SEND>":
                     send_data = received_data.get("DATA")
@@ -290,21 +290,21 @@ class Server:
                     self.handle_rename_file_action(client_socket, group_manager, rename_data)
 
                 elif received_data.get("FLAG") == "<GET_USERS>":
-                    self.handle_get_users_action(client_socket, identifier)
+                    self.handle_get_users_action(client_socket, identifier, aes_key)
 
                 elif received_data.get("FLAG") == "<CREATE_GROUP>":
                     create_group_data = received_data.get("DATA")
                     self.handle_create_group_action(client_socket, identifier, create_group_data)
 
                 elif received_data.get("FLAG") == "<LEAVE_GROUP>":
-                    self.handle_leave_group_action(client_socket, identifier)
+                    self.handle_leave_group_action(client_socket, identifier, aes_key)
                     break
 
         except (socket.error, IOError) as e:
             print(f"Error in handle_group_requests: {e}")
             client_socket.close()
 
-    def handle_presaved_files_action(self, client_socket, db_manager, folder_name):
+    def handle_presaved_files_action(self, client_socket, db_manager, folder_name, aes_key):
         print(folder_name)
         saved_file_prop_lst = []
         if isinstance(db_manager, GroupFiles):
@@ -317,7 +317,7 @@ class Server:
 
         data_to_send = {"FLAG": "<NARF>", "DATA": saved_file_prop_lst}
 
-        self.send_data(client_socket, pickle.dumps(data_to_send))
+        self.send_data(client_socket, pickle.dumps(data_to_send), aes_key)
 
     def handle_create_folder_action(self, db_manager, create_folder_data):
         folder_name = create_folder_data[0]
@@ -360,7 +360,7 @@ class Server:
             print(f"Error in handle_save_file_action: {e}")
             client_socket.close()
 
-    def handle_receive_files_action(self, client_socket, db_manager, recv_data):
+    def handle_receive_files_action(self, client_socket, db_manager, recv_data, aes_key):
         select_file_names_lst = recv_data[0]
         print(select_file_names_lst)
         folder_name = recv_data[1]
@@ -369,7 +369,7 @@ class Server:
             if isinstance(db_manager, GroupFiles):
                 for individual_file in select_file_names_lst:
                     file_data = \
-                    db_manager.get_file_data(self.get_group_name(client_socket), individual_file, folder_name)[0]
+                        db_manager.get_file_data(self.get_group_name(client_socket), individual_file, folder_name)[0]
                     file_data_name_dict[individual_file] = file_data
 
 
@@ -379,7 +379,7 @@ class Server:
                     file_data_name_dict[individual_file] = file_data
 
             data_dict = {"FLAG": '<RECV>', "DATA": file_data_name_dict}
-            self.send_data(client_socket, pickle.dumps(data_dict))
+            self.send_data(client_socket, pickle.dumps(data_dict), aes_key)
 
             print("Files sent successfully.")
 
@@ -442,26 +442,26 @@ class Server:
             client_socket.close()
 
     def handle_rename_file_action(self, client_socket, db_manager, rename_data):
-        try:
-            old_name = rename_data[0]
-            new_name = rename_data[1]
-            file_folder = rename_data[2]
+        old_name = rename_data[0]
+        new_name = rename_data[1]
+        file_folder = rename_data[2]
 
-            if isinstance(db_manager, GroupFiles):
-                group_name = self.get_group_name(client_socket)
-                db_manager.rename_file(group_name, old_name, new_name, file_folder)
-                queued_info = {"FLAG": "<RENAME>", "DATA": rename_data}
+        if isinstance(db_manager, GroupFiles):
+            group_name = self.get_group_name(client_socket)
+            db_manager.rename_file(group_name, old_name, new_name, file_folder)
+            if " <folder>" in old_name:
+                db_manager.rename_folder_files(group_name, old_name.replace(" <folder>", ""), new_name.replace(" <folder>", ""))
 
-                self.file_queue.put((client_socket, queued_info))
+            queued_info = {"FLAG": "<RENAME>", "DATA": rename_data}
 
-            elif isinstance(db_manager, UserFiles):
-                db_manager.rename_file(old_name, new_name)
+            self.file_queue.put((client_socket, queued_info))
 
-            print("File renamed successfully.")
+        elif isinstance(db_manager, UserFiles):
+            db_manager.rename_file(old_name, new_name, file_folder)
+            if " <folder>" in old_name:
+                db_manager.rename_folder_files(old_name.replace(" <folder>", ""), new_name.replace(" <folder>", ""))
 
-        except Exception as e:
-            print(f"Error in handle_rename_action: {e}")
-            client_socket.close()
+        print("File renamed successfully.")
 
     def handle_favorite_file_action(self, client_socket, user_files_manager, favorite_file_name):
         try:
@@ -480,11 +480,11 @@ class Server:
             print(f"Error in handle_unfavorite_action: {e}")
             client_socket.close()
 
-    def handle_get_users_action(self, client_socket, identifier):
+    def handle_get_users_action(self, client_socket, identifier, aes_key):
         all_users = AuthManager().get_all_users(identifier)
         print(f"this is all users {all_users}")
         data_to_send = {"FLAG": "<GET_USERS>", "DATA": all_users}
-        self.send_data(client_socket, pickle.dumps(data_to_send))
+        self.send_data(client_socket, pickle.dumps(data_to_send), aes_key)
         print(f"Sent users list to the client.")
 
     def handle_create_group_action(self, client_socket, identifier, group_data):
@@ -506,7 +506,7 @@ class Server:
         room_manager.insert_room(group_name, ",".join(group_participants), user_email, permission_values)
         print(f"Group created successfully.")
 
-    def handle_get_rooms_action(self, client_socket, identifier):
+    def handle_get_rooms_action(self, client_socket, identifier, aes_key):
         try:
             user_email = AuthManager().get_email(identifier)
             room_manager = RoomManager()
@@ -523,13 +523,14 @@ class Server:
                 rooms_dict[room] = [permissions_list, room_admin]
             # Pickle and send the dictionary over the socket
             data_to_send = {"FLAG": "<GET_ROOMS>", "DATA": rooms_dict}
-            self.send_data(client_socket, pickle.dumps(data_to_send))
+            self.send_data(client_socket, pickle.dumps(data_to_send), aes_key)
 
             print(f"Sent rooms containing {user_email} to the client.")
 
         except Exception as e:
             print(f"Error in fetch_rooms_for_user: {e}")
             client_socket.close()
+
     def is_user_admin(self, username, group_name):
         try:
             room_manager = RoomManager()
@@ -544,7 +545,7 @@ class Server:
             print(f"Error in is_user_admin: {e}")
             return False
 
-    def handle_join_group_action(self, client_socket, identifier, group_name):
+    def handle_join_group_action(self, client_socket, identifier, group_name, aes_key):
         try:
             user_email = AuthManager().get_email(identifier)
 
@@ -561,7 +562,7 @@ class Server:
                 # If the user is not in the list, append with the received group name
                 self.clients_list.append(GroupUser(client_socket, user_email, group_name))
 
-            self.send_data(client_socket, pickle.dumps({"FLAG": "<JOINED>", "DATA": user_email}))
+            self.send_data(client_socket, pickle.dumps({"FLAG": "<JOINED>", "DATA": user_email}), aes_key)
             print(f"User {user_email} joined the group '{group_name}'.")
 
             group_handler = threading.Thread(
@@ -574,13 +575,13 @@ class Server:
             print(f"Error in handle_join_group_action: {e}")
             client_socket.close()
 
-    def handle_leave_group_action(self, client_socket, identifier):
+    def handle_leave_group_action(self, client_socket, identifier, aes_key):
         try:
             for group_user in self.clients_list:
                 if group_user.user_socket == client_socket:
                     self.clients_list.remove(group_user)
                     break
-            self.send_data(client_socket, pickle.dumps({"FLAG": "<LEFT>"}))
+            self.send_data(client_socket, pickle.dumps({"FLAG": "<LEFT>"}), aes_key)
             client_handler = threading.Thread(
                 target=self.handle_requests,
                 args=(client_socket, identifier)
@@ -603,7 +604,7 @@ class Server:
         key = "TomerBenShushanSecretKey"
         totp = pyotp.TOTP(key)
 
-        #return totp.now()
+        # return totp.now()
         return "123456"
 
     def send_otp_email(self, u_email, u_username, client_socket):
