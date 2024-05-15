@@ -101,7 +101,7 @@ class Server:
 
                     answer_to_send = self.handle_login_info(u_email, u_password, db_authentication)
 
-                self.send_data(client_socket, pickle.dumps({"FLAG": "<SUCCESS>", "DATA": None}), aes_key)
+                self.send_data(client_socket, pickle.dumps({"FLAG": answer_to_send.get("FLAG"), "DATA": None}), aes_key)
                 if answer_to_send.get("FLAG") == "<SUCCESS>":
                     identifier = answer_to_send.get("DATA")
                     u_username = db_authentication.get_username(identifier)

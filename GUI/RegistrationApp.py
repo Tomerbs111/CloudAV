@@ -20,6 +20,7 @@ class RegistrationApp(ttk.Frame):
         self.switch_frame = switch_frame
         self.client_communicator = client_communicator
         self.set_info = set_info
+        self.attempts = 0
 
         self.register_frame = ttk.Frame(master=self)
 
@@ -304,6 +305,8 @@ class RegistrationApp(ttk.Frame):
         else:
             self.ans_email.configure(text="Invalid email. Please enter a valid email.", bootstyle="danger")
             checksum -= 1 if checksum != 0 else 0
+            self.attempts += 1
+
 
         u_password = self.password_entry.get()
         if len(u_password) >= 8:
@@ -313,6 +316,7 @@ class RegistrationApp(ttk.Frame):
             self.ans_password.configure(text="Invalid password. must be 8 characters or longer.",
                                         bootstyle="danger")
             checksum -= 1 if checksum != 0 else 0
+            self.attempts += 1
 
         if checksum == 2:
             self.server_ans = self.client_communicator.handle_client_login(self.attempt_type, u_email, u_password)

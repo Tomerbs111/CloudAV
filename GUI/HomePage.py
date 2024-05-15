@@ -438,20 +438,21 @@ class HomePage(ttk.Frame):
 
     def handle_presenting_presaved_files(self, folder_name):
         narf_answer = self.client_communicator.handle_presaved_files_client(folder_name)
-        if narf_answer == "<NO_DATA>":
+        if narf_answer == "<NO_DATA>" or narf_answer is None:
             return
         for individual_file in narf_answer:
             (file_name, file_bytes, file_date, favorite, folder) = individual_file
             if folder == self.get_current_folder():
                 formatted_file_date = self.set_date_format(file_date)
-                formatted_file_size = self.set_size_format(file_bytes)
 
                 if " <folder>" in file_name:
                     formatted_file_size = str(file_bytes) + " items"
                     self.add_folder_frame(file_name.replace(" <folder>", ""), formatted_file_size, formatted_file_date)
                 else:
+                    formatted_file_size = self.set_size_format(file_bytes)
                     self.add_file_frame(file_name.replace(" <folder>", ""), formatted_file_size, formatted_file_date,
                                         favorite)
+
 
     def handle_send_file_request(self):
         try:

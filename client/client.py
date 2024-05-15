@@ -299,7 +299,7 @@ class GroupCommunication:
             return saved_file_prop_lst
 
         except Exception as e:
-            print(f"Error in handle_presaved_files_client: {e}")
+            print(f"Error in handle_presaved_files_group: {e}")
 
     def handle_delete_request_group(self, select_file_names_lst, folders_to_delete, current_folder):
         data_dict = {"FLAG": '<DELETE>', "DATA": [folders_to_delete, select_file_names_lst, current_folder]}
@@ -346,7 +346,7 @@ class MainClient:
                 app.mainloop()
                 self.client_socket.close()
                 break
-        except (socket.error, IOError) as e:
+        except (socket.error, IOError, KeyboardInterrupt) as e:
             print(f"Error: {e}")
         finally:
             self.client_socket.close()
