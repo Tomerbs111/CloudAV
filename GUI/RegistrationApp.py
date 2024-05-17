@@ -49,6 +49,8 @@ class RegistrationApp(ttk.Frame):
         self.auth_completed = False
         self.server_ans = None
         self.attempt_type = "<LOGIN>"
+        self.twofapage_open = False
+
 
         # Initialize UI components
         self.setup_logo(self.login_frame, posx=0.01, posy=0.04)
@@ -296,6 +298,9 @@ class RegistrationApp(ttk.Frame):
                 self.after(1000, lambda: self.switch_frame("HomePage", self.client_communicator))
 
     def l_when_submit(self):
+        if self.twofapage_open:
+            # If open, don't proceed with login
+            return
         checksum = 0
 
         u_email = self.email_entry.get()
@@ -331,6 +336,8 @@ class RegistrationApp(ttk.Frame):
                                             bootstyle="danger")
             else:
                 self.twofapage = TwoFactorAuthentication(self, self.client_communicator)
+                self.twofapage_open = True
+                self.twofapage.focus_set()
                 self.twofapage.wait_window()
                 identifier = self.twofapage.identifier
 
@@ -353,6 +360,7 @@ class TwoFactorAuthentication(CTkToplevel):
         self.setup_information()
         self.setup_verification_code_frame()
         self.setup_submit_button()
+        self.focus_force()
 
     def setup_image(self):
         container = tk.Frame(master=self)
