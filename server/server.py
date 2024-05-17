@@ -22,6 +22,9 @@ from queue import Queue
 HOST = '0.0.0.0'
 PORT = 40301
 
+# TODO: download folders
+# TODO: refresh groups
+
 
 class Server:
     def __init__(self):
