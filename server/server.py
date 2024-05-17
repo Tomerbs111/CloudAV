@@ -372,7 +372,8 @@ class Server:
                 db_manager.insert_file(file_name, file_size, file_date, group_name, file_folder, file_bytes)
 
                 file_info = self.get_file_info(db_manager, group_name, file_name, file_folder)
-                queued_info = {"FLAG": "<SEND>", "DATA": file_info}
+                print(file_info)
+                queued_info = {"FLAG": "<SEND>", "DATA": all_file_content}
 
                 self.file_queue.put((client_socket, queued_info))
 
