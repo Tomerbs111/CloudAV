@@ -79,9 +79,9 @@ class Server:
             print(f"Unexpected error in server start: {e}")
         finally:
             self.server_socket.close()
-
     def handle_register_login(self, client_socket, identifier, aes_key):
         try:
+            identifier = None
             while True:
                 received_data = pickle.loads(self.recv_data(client_socket, aes_key))
                 authentication_flag = received_data.get("FLAG")
@@ -94,31 +94,37 @@ class Server:
                     u_password = field_dict['password']
 
                     answer_to_send = self.handle_register_info(u_email, u_username, u_password, db_authentication)
+                    self.send_data(client_socket, pickle.dumps({"FLAG": answer_to_send.get("FLAG"), "DATA": None}),
+                                   aes_key)
+                    if answer_to_send.get("FLAG") == "<SUCCESS>":
+                        identifier = answer_to_send.get("DATA")
 
                 elif authentication_flag == "<LOGIN>":
                     u_email = field_dict['email']
                     u_password = field_dict['password']
 
                     answer_to_send = self.handle_login_info(u_email, u_password, db_authentication)
+                    self.send_data(client_socket, pickle.dumps({"FLAG": answer_to_send.get("FLAG"), "DATA": None}),
+                                   aes_key)
 
-                self.send_data(client_socket, pickle.dumps({"FLAG": answer_to_send.get("FLAG"), "DATA": None}), aes_key)
-                if answer_to_send.get("FLAG") == "<SUCCESS>":
-                    identifier = answer_to_send.get("DATA")
-                    u_username = db_authentication.get_username(identifier)
-                    otp_password = self.send_otp_email(u_email, u_username, client_socket)
+                    # Check if login was successful then starts 2FA
+                    if answer_to_send.get("FLAG") == "<SUCCESS>":
+                        identifier = answer_to_send.get("DATA")
+                        u_username = db_authentication.get_username(identifier)
+                        otp_password = self.send_otp_email(u_email, u_username, client_socket)
 
-                    while True:
-                        client_response = pickle.loads(self.recv_data(client_socket, aes_key))
-                        print(client_response.get("DATA"))
-                        print(otp_password)
-                        if client_response.get("DATA") == otp_password:
-                            print(f"User {u_email} logged in.")
-                            self.send_data(client_socket, pickle.dumps(
-                                {"FLAG": "<2FA_SUCCESS>", "DATA": db_authentication.get_username(identifier)}), aes_key)
-                            break
+                        while True:
+                            client_response = pickle.loads(self.recv_data(client_socket, aes_key))
+                            print(client_response.get("DATA"))
+                            print(otp_password)
+                            if client_response.get("DATA") == otp_password:
+                                print(f"User {u_email} logged in.")
+                                self.send_data(client_socket, pickle.dumps(
+                                    {"FLAG": "<2FA_SUCCESS>", "DATA": db_authentication.get_username(identifier)}), aes_key)
+                                break
 
-                        else:
-                            self.send_data(client_socket, pickle.dumps({"FLAG": "<2FA_FAILED>", "DATA": None}), aes_key)
+                            else:
+                                self.send_data(client_socket, pickle.dumps({"FLAG": "<2FA_FAILED>", "DATA": None}), aes_key)
 
                 if identifier:
                     # Start a new thread to handle the client

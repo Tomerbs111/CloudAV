@@ -105,18 +105,14 @@ class ClientCommunication:
             print(f"Error in receive_checked_files: {e}")
 
     def handle_presaved_files_client(self, file_folder):
-        try:
-            operation_dict = {"FLAG": "<NARF>", "DATA": file_folder}
-            self.send_data(self.client_socket, pickle.dumps(operation_dict))
+        operation_dict = {"FLAG": "<NARF>", "DATA": file_folder}
+        self.send_data(self.client_socket, pickle.dumps(operation_dict))
 
-            received_data = pickle.loads(self.recv_data(self.client_socket))
-            saved_file_prop_lst = received_data.get("DATA")
-            print(saved_file_prop_lst)
+        received_data = pickle.loads(self.recv_data(self.client_socket))
+        saved_file_prop_lst = received_data.get("DATA")
+        print(saved_file_prop_lst)
 
-            return saved_file_prop_lst
-
-        except Exception as e:
-            print(f"Error in handle_presaved_files_client: {e}")
+        return saved_file_prop_lst
 
     def handle_delete_request_client(self, select_file_names_lst, folders_to_delete, current_folder):
         data_dict = {"FLAG": '<DELETE>', "DATA": [select_file_names_lst, folders_to_delete, current_folder]}
@@ -239,8 +235,7 @@ class GroupCommunication:
                     on_broadcast_callback(received_data)
         except Exception as e:
             return
-        finally:
-            self.client_socket.close()
+
     def handle_add_new_folder_request(self, real_folder_name, folder_size, folder_date, folder_folder, group_name):
         data_dict = {"FLAG": '<CREATE_FOLDER_GROUP>',
                      "DATA": [real_folder_name, folder_size, folder_date, folder_folder, group_name]}
@@ -317,7 +312,6 @@ class GroupCommunication:
             data_dict = {"FLAG": '<LOG_OUT>'}
             self.send_data(self.client_socket, pickle.dumps(data_dict))
             self.receive_thread.join()
-            self.client_socket.close()
             print("Logged out successfully.")
         except Exception as e:
             print(f"Error while logging out: {e}")

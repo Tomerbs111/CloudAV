@@ -363,7 +363,7 @@ class HomePage(ttk.Frame):
         formatted_folder_date = self.set_date_format(folder_date)
 
         add_folder_thread = threading.Thread(target=self.client_communicator.handle_add_new_folder_request,
-                                             args=(folder_name, folder_size + " items", folder_date, folder_folder))
+                                             args=(folder_name, str(folder_size) + " items", folder_date, folder_folder))
         add_folder_thread.start()
 
         self.add_folder_frame(real_folder_name, folder_size, formatted_folder_date)
