@@ -246,7 +246,8 @@ class Page(ttk.Frame):
 
     def handle_log_out_action(self):
         self.communicator.log_out()
-        self.switch_frame("Logout", self.communicator)
+        self.pack_forget()
+        self.switch_frame("RegistrationApp", self.communicator)
 
     def handle_add_new_folder_request(self):
         folder_name = self.folder_name_entry.get().strip()

@@ -23,7 +23,6 @@ HOST = '0.0.0.0'
 PORT = 40301
 
 
-# TODO: rename folder
 class Server:
     def __init__(self):
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -83,7 +82,6 @@ class Server:
 
     def handle_register_login(self, client_socket, identifier, aes_key):
         try:
-            identifier = None
             while True:
                 received_data = pickle.loads(self.recv_data(client_socket, aes_key))
                 authentication_flag = received_data.get("FLAG")
@@ -266,7 +264,7 @@ class Server:
                     break
 
                 elif received_data.get("FLAG") == "<LOGOUT>":
-                    self.handle_logout_action(client_socket)
+                    self.handle_logout_action(client_socket, aes_key)
                     break
 
 
@@ -318,7 +316,7 @@ class Server:
                     break
 
                 elif received_data.get("FLAG") == "<LOGOUT>":
-                    self.handle_logout_action(client_socket)
+                    self.handle_logout_action(client_socket, aes_key)
                     break
 
         except (socket.error, IOError) as e:
@@ -484,7 +482,8 @@ class Server:
             if isinstance(db_manager, GroupFiles):
                 group_name = self.get_group_name(client_socket)
                 db_manager.rename_file(group_name, old_name, new_name, file_folder)
-                db_manager.rename_folder_files(group_name, old_name.replace(" <folder>", ""), new_name.replace(" <folder>", ""))
+                db_manager.rename_folder_files(group_name, old_name.replace(" <folder>", ""),
+                                               new_name.replace(" <folder>", ""))
 
                 queued_info = {"FLAG": "<RENAME>", "DATA": rename_data}
                 self.file_queue.put((client_socket, queued_info))
@@ -687,22 +686,14 @@ class Server:
             print(e)
             print("Email failed to send.")
 
-    def handle_logout_action(self, client_socket):
-        try:
-            for group_user in self.clients_list:
-                if group_user.user_socket == client_socket:
-                    self.clients_list.remove(group_user)
-                    break
-            print("User logged out successfully.")
-        except Exception as e:
-            print(f"Error in handle_logout_action: {e}")
-            client_socket.close()
-
-
-
-        except Exception as e:
-            print(f"Error in handle_rename_folder_action: {e}")
-            client_socket.close()
+    def handle_logout_action(self, client_socket, aes_key):
+        for group_user in self.clients_list:
+            if group_user.user_socket == client_socket:
+                self.clients_list.remove(group_user)
+                break
+        self.send_data(client_socket, pickle.dumps({"FLAG": "<LEFT>"}), aes_key)
+        identifier = None
+        self.handle_register_login(client_socket, identifier, aes_key)
 
 
 if __name__ == "__main__":
