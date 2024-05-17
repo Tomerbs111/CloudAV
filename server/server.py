@@ -288,7 +288,7 @@ class Server:
 
                 elif received_data.get("FLAG") == "<CREATE_FOLDER_GROUP>":
                     create_folder_data = received_data.get("DATA")
-                    self.handle_create_folder_action(group_manager, create_folder_data)
+                    self.handle_create_folder_action(client_socket, group_manager, create_folder_data)
 
                 elif received_data.get("FLAG") == "<RECV>":
                     recv_data = received_data.get("DATA")
@@ -341,7 +341,7 @@ class Server:
 
         self.send_data(client_socket, pickle.dumps(data_to_send), aes_key)
 
-    def handle_create_folder_action(self, db_manager, create_folder_data):
+    def handle_create_folder_action(self, client_socket, db_manager, create_folder_data):
         folder_name = create_folder_data[0]
         folder_size = create_folder_data[1]
         folder_date = create_folder_data[2]
@@ -355,6 +355,9 @@ class Server:
             print(create_folder_data)
             group_name = create_folder_data[4]
             db_manager.insert_file(folder_name, folder_size, folder_date, group_name, folder_folder, folder_bytes)
+            queued_info = {"FLAG": "<SEND>", "DATA": create_folder_data}
+
+            self.file_queue.put((client_socket, queued_info))
 
     def handle_send_file_action(self, client_socket, db_manager, all_file_content):
         try:
@@ -433,8 +436,6 @@ class Server:
                             if " <folder>" in files_in_folder:
                                 delete_folder_recursive(folder_name, files_in_folder.replace(" <folder>", ""))
                             db_manager.delete_file(self.get_group_name(client_socket), files_in_folder, folder_name)
-                            queued_info = {"FLAG": "<DELETE>", "DATA": files_in_folder}
-                            self.file_queue.put((client_socket, queued_info))
 
                     delete_folder_recursive(current_folder, individual_folder.replace(" <folder>", ""))
                     db_manager.delete_file(self.get_group_name(client_socket), individual_folder, current_folder)

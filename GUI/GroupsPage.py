@@ -568,15 +568,26 @@ class GroupsPage(ttk.Frame):
             received_data = data.get("DATA")
 
             if protocol_flag == "<SEND>":
-                # Check if all files have the same folder
-                folders = set(item[-1] for item in received_data)
-                if len(folders) == 1:
-                    self.add_folder_frame(received_data[0][-1], len(received_data),self.set_date_format(pickle.loads(received_data[0][1])), received_data[0][0])
+                # Extract the data
+                file_name = received_data[0]
+                file_size = received_data[1]
+                file_date = received_data[2]
+                folder = received_data[3]
+                group_name = received_data[4]
+
+                # Check if it's a folder or file
+                if " <folder>" in file_name:
+                    # It's a folder
+                    formatted_folder_date = self.set_date_format(file_date)
+                    self.add_folder_frame(file_name.replace(" <folder>", ""), file_size, formatted_folder_date,
+                                          self.owner)
                 else:
-                    for item in received_data:
-                        owner, name, size, date, group_name, folder = item
-                        self.add_file_frame(name, self.set_size_format(size), self.set_date_format(pickle.loads(date)),
-                                            owner)
+                    # It's a file
+                    formatted_file_date = self.set_date_format(file_date)
+                    formatted_file_size = self.set_size_format(file_size)
+                    self.add_file_frame(file_name.replace(" <folder>", ""), formatted_file_size, formatted_file_date,
+                                        group_file_owner="self")
+
             elif protocol_flag == "<NARF>":
                 self.handle_presenting_presaved_files(received_data)
 

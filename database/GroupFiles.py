@@ -35,7 +35,7 @@ class GroupFiles:
     '''
 
     DELETE_FILE_QUERY = '''
-        DELETE FROM GroupFiles WHERE GroupName = ? AND Owner = ? AND Name = ? AND Folder = ?;
+        DELETE FROM GroupFiles WHERE GroupName = ? AND Name = ? AND Folder = ?;
     '''
 
     RENAME_FILE_QUERY = '''
@@ -89,7 +89,7 @@ class GroupFiles:
         return formatted_names
 
     def delete_file(self, group_name: str, name: str, folder: str):
-        self._execute_query(self.REMOVE_FILE_QUERY, (group_name, self.owner_id, name, folder))
+        self.cur.execute(self.DELETE_FILE_QUERY, (group_name, name, folder))
         self.conn.commit()
 
     def rename_file(self, group_name: str, old_name: str, new_name: str, folder: str):
@@ -118,4 +118,4 @@ class GroupFiles:
 
 if __name__ == '__main__':
     asf = GroupFiles('tomerbs1810@gmail.com')
-    print(asf.get_name_file_from_folder_group('group1', 'Room'))
+    print(asf.delete_file('group1', 'colors.png', 'Room'))

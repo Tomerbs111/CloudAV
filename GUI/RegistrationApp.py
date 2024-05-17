@@ -154,7 +154,7 @@ class RegistrationApp(ttk.Frame):
 
         )
         self.email_entry.place(relx=posx, rely=posy + label_height, relwidth=entry_width, relheight=entry_height)
-        self.email_entry.insert(0, "jasaxaf511@fincainc.com")
+        self.email_entry.insert(0, "9727calm@fthcapital.com")
         self.ans_email = ttk.Label(
             master=master,
             text=""
