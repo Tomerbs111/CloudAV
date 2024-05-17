@@ -570,6 +570,7 @@ class GroupsPage(ttk.Frame):
             if protocol_flag == "<SEND>":
 
                 for item in received_data:
+                    print(f"item: {item}")
                     owner, name, size, date, group_name, folder = item
                     self.add_file_frame(name, self.set_size_format(size), self.set_date_format(pickle.loads(date)),
                                         owner)

@@ -355,7 +355,8 @@ class Server:
             print(create_folder_data)
             group_name = create_folder_data[4]
             db_manager.insert_file(folder_name, folder_size, folder_date, group_name, folder_folder, folder_bytes)
-            queued_info = {"FLAG": "<SEND>", "DATA": create_folder_data}
+            folder_info = db_manager.get_file_info(group_name, folder_name, folder_folder)
+            queued_info = {"FLAG": "<SEND>", "DATA": [folder_info]}
 
             self.file_queue.put((client_socket, queued_info))
 
@@ -372,8 +373,8 @@ class Server:
                 db_manager.insert_file(file_name, file_size, file_date, group_name, file_folder, file_bytes)
 
                 file_info = self.get_file_info(db_manager, group_name, file_name, file_folder)
-                print(file_info)
-                queued_info = {"FLAG": "<SEND>", "DATA": all_file_content}
+                print(f"File info: {file_info}")
+                queued_info = {"FLAG": "<SEND>", "DATA": [file_info]}
 
                 self.file_queue.put((client_socket, queued_info))
 
@@ -426,6 +427,8 @@ class Server:
                     self.file_queue.put((client_socket, queued_info))
 
                 for individual_folder in folder_names_lst:
+                    queued_info = {"FLAG": "<DELETE>", "DATA": individual_folder}
+                    self.file_queue.put((client_socket, queued_info))
                     def delete_folder_recursive(current_folder, folder_name):
                         all_files = db_manager.get_name_file_from_folder_group(self.get_group_name(client_socket),
                                                                                folder_name)

@@ -67,7 +67,7 @@ class ClientCommunication:
         return server_answer
 
     def handle_add_new_folder_request(self, real_folder_name, folder_size, folder_date, folder_folder):
-        data_dict = {"FLAG": '<CREATE_FOLDER>', "DATA": [real_folder_name, folder_size, folder_date, folder_folder]}
+        data_dict = {"FLAG": '<CREATE_FOLDER>', "DATA": (real_folder_name, folder_size, folder_date, folder_folder)}
         self.send_data(self.client_socket, pickle.dumps(data_dict))
 
         print(f"Folder '{real_folder_name}' created successfully")

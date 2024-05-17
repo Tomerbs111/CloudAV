@@ -97,16 +97,18 @@ class GroupFiles:
         self.conn.commit()
 
     def get_file_info(self, group_name: str, name: str, folder: str):
-        return self._execute_query(self.GET_FILE_INFO_QUERY, (group_name, self.owner_id, name, folder))
-
-    def get_file_data(self, group_name: str, name: str, folder: str):
-        result = self._execute_query(self.GET_FILE_DATA_QUERY, (group_name, self.owner_id, name, folder))
+        result = self._execute_query(self.GET_FILE_INFO_QUERY, (group_name, self.owner_id, name, folder))
         if result:
             # Assuming that result is a list containing a single tuple
-            return result[0]
+            return result[0]  # Return the first tuple from the result list
         else:
             # Handle the case where no matching records are found
             return None  # or raise an exception or return a default value
+
+    def get_file_data(self, group_name: str, name: str, folder: str):
+        result = self._execute_query(self.GET_FILE_DATA_QUERY, (group_name, self.owner_id, name, folder))
+        print(result)
+        return result
 
     def rename_folder_files(self, group_name: str, old_folder_name: str, new_folder_name: str):
         self._execute_query(self.RENAME_FOLDER_FILES_QUERY,
@@ -118,4 +120,4 @@ class GroupFiles:
 
 if __name__ == '__main__':
     asf = GroupFiles('tomerbs1810@gmail.com')
-    print(asf.delete_file('group1', 'colors.png', 'Room'))
+    print(asf.get_file_info('counries', 'FFFFFFFF <folder>', 'counries'))
