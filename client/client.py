@@ -119,8 +119,8 @@ class ClientCommunication:
         self.send_data(self.client_socket, pickle.dumps(data_dict))
         print("Files deleted successfully.")
 
-    def handle_rename_request_client(self, rename_data):
-        data_dict = {"FLAG": '<RENAME>', "DATA": rename_data}
+    def handle_rename_request_client(self, rename_data, type_of_rename):
+        data_dict = {"FLAG": '<RENAME>', "DATA": rename_data, "TYPE": type_of_rename}
         self.send_data(self.client_socket, pickle.dumps(data_dict))
         print("Files renamed successfully.")
 
@@ -301,8 +301,8 @@ class GroupCommunication:
         self.send_data(self.client_socket, pickle.dumps(data_dict))
         print("Files deleted successfully.")
 
-    def handle_rename_request_group(self, rename_data):
-        data_dict = {"FLAG": '<RENAME>', "DATA": rename_data}
+    def handle_rename_request_group(self, rename_data, type_of_rename):
+        data_dict = {"FLAG": '<RENAME>', "DATA": rename_data, "TYPE": type_of_rename}
         self.send_data(self.client_socket, pickle.dumps(data_dict))
         print("Files renamed successfully.")
 

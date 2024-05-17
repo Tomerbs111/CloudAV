@@ -23,6 +23,7 @@ HOST = '0.0.0.0'
 PORT = 40301
 
 
+# TODO: rename folder
 class Server:
     def __init__(self):
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -79,6 +80,7 @@ class Server:
             print(f"Unexpected error in server start: {e}")
         finally:
             self.server_socket.close()
+
     def handle_register_login(self, client_socket, identifier, aes_key):
         try:
             identifier = None
@@ -120,11 +122,13 @@ class Server:
                             if client_response.get("DATA") == otp_password:
                                 print(f"User {u_email} logged in.")
                                 self.send_data(client_socket, pickle.dumps(
-                                    {"FLAG": "<2FA_SUCCESS>", "DATA": db_authentication.get_username(identifier)}), aes_key)
+                                    {"FLAG": "<2FA_SUCCESS>", "DATA": db_authentication.get_username(identifier)}),
+                                               aes_key)
                                 break
 
                             else:
-                                self.send_data(client_socket, pickle.dumps({"FLAG": "<2FA_FAILED>", "DATA": None}), aes_key)
+                                self.send_data(client_socket, pickle.dumps({"FLAG": "<2FA_FAILED>", "DATA": None}),
+                                               aes_key)
 
                 if identifier:
                     # Start a new thread to handle the client
@@ -235,7 +239,8 @@ class Server:
 
                 elif received_data.get("FLAG") == "<RENAME>":
                     rename_data = received_data.get("DATA")
-                    self.handle_rename_file_action(client_socket, user_files_manager, rename_data)
+                    type_of_rename = received_data.get("TYPE")
+                    self.handle_rename_file_action(client_socket, user_files_manager, rename_data, type_of_rename)
 
                 elif received_data.get("FLAG") == "<FAVORITE>":
                     favorite_data = received_data.get("DATA")
@@ -298,7 +303,8 @@ class Server:
 
                 elif received_data.get("FLAG") == "<RENAME>":
                     rename_data = received_data.get("DATA")
-                    self.handle_rename_file_action(client_socket, group_manager, rename_data)
+                    type_of_rename = received_data.get("TYPE")
+                    self.handle_rename_file_action(client_socket, group_manager, rename_data, type_of_rename)
 
                 elif received_data.get("FLAG") == "<GET_USERS>":
                     self.handle_get_users_action(client_socket, identifier, aes_key)
@@ -456,27 +462,37 @@ class Server:
             print(f"Error in handle_delete_action: {e}")
             client_socket.close()
 
-    def handle_rename_file_action(self, client_socket, db_manager, rename_data):
+    def handle_rename_file_action(self, client_socket, db_manager, rename_data, type_of_rename):
         old_name = rename_data[0]
         new_name = rename_data[1]
         file_folder = rename_data[2]
 
-        if isinstance(db_manager, GroupFiles):
-            group_name = self.get_group_name(client_socket)
-            db_manager.rename_file(group_name, old_name, new_name, file_folder)
-            if " <folder>" in old_name:
+        print(old_name, new_name, file_folder, type_of_rename)
+        if type_of_rename == "<FILE>":
+            if isinstance(db_manager, GroupFiles):
+                group_name = self.get_group_name(client_socket)
+                db_manager.rename_file(group_name, old_name, new_name, file_folder)
+
+                queued_info = {"FLAG": "<RENAME>", "DATA": rename_data}
+                self.file_queue.put((client_socket, queued_info))
+
+            if isinstance(db_manager, UserFiles):
+                db_manager.rename_file(old_name, new_name, file_folder)
+            print("File renamed successfully.")
+
+        elif type_of_rename == "<FOLDER>":
+            if isinstance(db_manager, GroupFiles):
+                group_name = self.get_group_name(client_socket)
+                db_manager.rename_file(group_name, old_name, new_name, file_folder)
                 db_manager.rename_folder_files(group_name, old_name.replace(" <folder>", ""), new_name.replace(" <folder>", ""))
 
-            queued_info = {"FLAG": "<RENAME>", "DATA": rename_data}
+                queued_info = {"FLAG": "<RENAME>", "DATA": rename_data}
+                self.file_queue.put((client_socket, queued_info))
 
-            self.file_queue.put((client_socket, queued_info))
-
-        elif isinstance(db_manager, UserFiles):
-            db_manager.rename_file(old_name, new_name, file_folder)
-            if " <folder>" in old_name:
+            if isinstance(db_manager, UserFiles):
+                db_manager.rename_file(old_name, new_name, file_folder)
                 db_manager.rename_folder_files(old_name.replace(" <folder>", ""), new_name.replace(" <folder>", ""))
-
-        print("File renamed successfully.")
+            print("Folder renamed successfully.")
 
     def handle_favorite_file_action(self, client_socket, user_files_manager, favorite_file_name):
         try:
@@ -681,6 +697,13 @@ class Server:
         except Exception as e:
             print(f"Error in handle_logout_action: {e}")
             client_socket.close()
+
+
+
+        except Exception as e:
+            print(f"Error in handle_rename_folder_action: {e}")
+            client_socket.close()
+
 
 if __name__ == "__main__":
     server = Server()

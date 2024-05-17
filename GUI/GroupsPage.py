@@ -524,21 +524,32 @@ class GroupsPage(ttk.Frame):
             file_frame = self.get_checked_file_frames()[0]
             old_name = file_frame.get_filename()
 
-            file_format = os.path.splitext(old_name)[1]
+            file_format = ""
+            if not file_frame.is_folder:
+                file_format = os.path.splitext(old_name)[1]
 
             new_name_dialog = CTkInputDialog(text=f"Replace {old_name} with:",
-                                             title="Rename file")
+                                             title="Rename " + ("folder" if file_frame.is_folder else "file"))
             new_name = new_name_dialog.get_input()
 
             if new_name:
-                new_name_with_format = f"{new_name}{file_format}"
+                if file_frame.is_folder:
+                    new_name_with_format = f"{new_name} <folder>"
+                    rename_thread = threading.Thread(
+                        target=self.group_communicator.handle_rename_request_group,
+                        args=((old_name + " <folder>", new_name_with_format, self.get_current_folder()), "<FOLDER>")
+                    )
+                else:
+                    new_name_with_format = f"{new_name}{file_format}"
+                    rename_thread = threading.Thread(
+                        target=self.group_communicator.handle_rename_request_group,
+                        args=((old_name, new_name_with_format, self.get_current_folder()), "<FILE>")
+                    )
 
-                rename_thread = threading.Thread(
-                    target=self.group_communicator.handle_rename_request_group,
-                    args=([old_name, new_name_with_format, self.get_current_folder()],))
                 rename_thread.start()
 
-                file_frame.set_filename(new_name_with_format)
+                # Update the UI
+                file_frame.set_filename(new_name if file_frame.is_folder else new_name)
                 file_frame.update_idletasks()
         except IndexError:
             pass

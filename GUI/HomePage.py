@@ -509,30 +509,65 @@ class HomePage(ttk.Frame):
                 args=(file_name, new_value))
             unfavorite_thread.start()
 
-    def handle_rename_request_client(self):
+
+    def handle_rename_request_client(self, is_folder=False):
         try:
             file_frame = self.get_checked_file_frames()[0]
             old_name = file_frame.get_filename()
 
-            file_format = os.path.splitext(old_name)[1]
+            file_format = ""
+            if not file_frame.is_folder:
+                file_format = os.path.splitext(old_name)[1]
 
             new_name_dialog = CTkInputDialog(text=f"Replace {old_name} with:",
-                                             title="Rename file")
+                                             title="Rename " + ("folder" if file_frame.is_folder else "file"))
             new_name = new_name_dialog.get_input()
 
             if new_name:
-                new_name_with_format = f"{new_name}{file_format}"
                 if file_frame.is_folder:
-                    old_name += " <folder>"
-                    new_name += " <folder>"
-                    new_name_with_format = new_name.replace(" <folder>", "")
+                    new_name_with_format = f"{new_name} <folder>"
+                    rename_thread = threading.Thread(
+                        target=self.client_communicator.handle_rename_request_client,
+                        args=((old_name + " <folder>", new_name_with_format, self.get_current_folder()), "<FOLDER>")
+                    )
+                else:
+                    new_name_with_format = f"{new_name}{file_format}"
+                    rename_thread = threading.Thread(
+                        target=self.client_communicator.handle_rename_request_client,
+                        args=((old_name, new_name_with_format, self.get_current_folder()), "<FILE>")
+                    )
 
-                rename_thread = threading.Thread(
-                    target=self.client_communicator.handle_rename_request_client,
-                    args=((old_name, new_name, self.get_current_folder()),))
                 rename_thread.start()
 
-                file_frame.set_filename(new_name_with_format)
+                # Update the UI
+                file_frame.set_filename(new_name_with_format if is_folder else new_name)
+                file_frame.update_idletasks()
+        except IndexError:
+            pass
+
+    def handle_rename_folder_request_client(self):
+        try:
+            # Get the selected folder
+            file_frame = self.get_checked_file_frames()[0]
+            old_name = file_frame.get_filename()
+
+            # Open a dialog to get the new folder name
+            new_name_dialog = CTkInputDialog(text=f"Replace {old_name} with:", title="Rename folder")
+            new_name = new_name_dialog.get_input()
+
+            if new_name:
+                # Ensure the new name does not conflict with existing names
+                new_name_with_format = f"{new_name} <folder>"
+
+                # Send the rename request to the server
+                rename_thread = threading.Thread(
+                    target=self.client_communicator.handle_rename_folder_request_client,
+                    args=((old_name + " <folder>", new_name_with_format, self.get_current_folder()),)
+                )
+                rename_thread.start()
+
+                # Update the UI
+                file_frame.set_filename(new_name)
                 file_frame.update_idletasks()
         except IndexError:
             pass
