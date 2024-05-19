@@ -1,8 +1,4 @@
-import threading
-from tkinter import filedialog as fd
-from datetime import datetime
-import customtkinter
-from ttkbootstrap.scrolled import ScrolledFrame
+
 import re
 import ttkbootstrap as ttk
 from customtkinter import *
@@ -50,7 +46,6 @@ class RegistrationApp(ttk.Frame):
         self.server_ans = None
         self.attempt_type = "<LOGIN>"
         self.twofapage_open = False
-
 
         # Initialize UI components
         self.setup_logo(self.login_frame, posx=0.01, posy=0.04)
@@ -312,7 +307,6 @@ class RegistrationApp(ttk.Frame):
             checksum -= 1 if checksum != 0 else 0
             self.attempts += 1
 
-
         u_password = self.password_entry.get()
         if len(u_password) >= 8:
             self.ans_password.configure(text="Password is valid", bootstyle="success")
@@ -409,7 +403,6 @@ class TwoFactorAuthentication(CTkToplevel):
         self.answer_label = CTkLabel(container_frame, text="", text_color='#FF0000')
         self.answer_label.pack(side="bottom", anchor="center", fill='x', padx=10)
 
-
     def on_submit(self):
         entered_code = "".join(entry.get() for entry in self.code_entries)
         if entered_code:
@@ -429,4 +422,3 @@ class TwoFactorAuthentication(CTkToplevel):
                 self.answer_label.configure(text="Verification successful", text_color="green")
                 self.identifier = page_answer_data
                 self.destroy()
-

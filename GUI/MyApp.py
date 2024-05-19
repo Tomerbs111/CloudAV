@@ -24,7 +24,7 @@ class Page(ttk.Frame):
         self.communicator = communicator
         self.current_frame = current_frame
 
-
+        self.room_dictionary = None
 
         self.f_data_center = None
         self.f_current_page = None
@@ -179,16 +179,53 @@ class Page(ttk.Frame):
         self.f_current_page.pack(side="left", fill="both", expand=True, padx=10, pady=10)
 
     def setup_groups_segment(self):
+        # Create a separator
         ttk.Separator(self.f_options, orient="horizontal").pack(side='top', fill='x', pady=5, padx=10)
 
+        # Pack the main frame
         self.group_menu_frame.pack(side='top', fill='x')
-        CTkLabel(self.group_menu_frame, text="Your groups:", font=('Arial', 12)).pack(padx=10, fill='x', side='left')
 
-        CTkButton(
+        # Create and grid the label
+        CTkLabel(
             self.group_menu_frame,
-            text="Create new group",
+            text="Your groups",
+            font=('Arial', 16),
+            fg_color='transparent',
+        ).grid(row=0, column=0, pady=5, padx=10, sticky='n')
+
+        # Create the "New group" button
+        new_group_button = CTkButton(
+            self.group_menu_frame,
+            text="New group",
+            compound='right',
+            anchor='w',
+            image=CTkImage(Image.open("../GUI/file_icons/add_file_plus_icon.png"), size=(20, 20)),
+            width=18,
             command=self.handle_create_group_window
-        ).pack(side='left', pady=5, fill='x', padx=10)
+        )
+
+        # Create the "Refresh" button
+        refresh_button = CTkButton(
+            self.group_menu_frame,
+            text="",
+            compound='right',
+            anchor='w',
+            image=CTkImage(Image.open("../GUI/file_icons/refresh_icon.png"), size=(20, 20)),
+            command=self.get_group_names(),
+            width=18,
+        )
+
+        # Grid buttons in the same row
+        new_group_button.grid(row=0, column=1, padx=5, pady=5, sticky='ew')
+        refresh_button.grid(row=0, column=2, padx=5, pady=5, sticky='ew')
+
+        # Ensure the buttons are the same size
+        self.group_menu_frame.grid_columnconfigure(0, weight=1)
+        self.group_menu_frame.grid_columnconfigure(1, weight=1)
+
+        # Adjust the padding and alignment as needed
+        self.group_menu_frame.grid_rowconfigure(0, weight=1)
+        self.group_menu_frame.grid_rowconfigure(1, weight=1)
 
     def switch_to_groups_page(self, group_name, permissions, room_admin):
         self.user_username, self.user_email = self.get_user_info()
@@ -300,20 +337,28 @@ class Page(ttk.Frame):
                 ).pack(side='top', pady=5, anchor='w', fill='x', padx=10)
 
     def get_group_names(self):
-        rooms_dict = self.communicator.get_all_groups()
+        new_room_dictionary = self.communicator.get_all_groups()
         try:
-            print(rooms_dict)
+            print(new_room_dictionary)
 
-            for room, permissions in rooms_dict.items():
+            # Check for differences between the current and new dictionaries
+            removed_rooms = set(self.room_dictionary.keys()) - set(new_room_dictionary.keys())
+
+            for room, permissions in new_room_dictionary.items():
                 print(f"Room: {room}, Permissions: {permissions}")
-                CTkButton(
-                    self.f_options,
-                    text=room,
-                    compound='left',
-                    fg_color="transparent",
-                    command=lambda button_text=room: self.switch_to_groups_page(button_text, permissions[0],
-                                                                                permissions[1])
-                ).pack(side='top', pady=5, anchor='w', fill='x', padx=10)
+                # Check if the room is not in the removed rooms set
+                if room not in removed_rooms:
+                    CTkButton(
+                        self.f_options,
+                        text=room,
+                        compound='left',
+                        fg_color="transparent",
+                        command=lambda button_text=room: self.switch_to_groups_page(button_text, permissions[0],
+                                                                                    permissions[1])
+                    ).pack(side='top', pady=5, anchor='w', fill='x', padx=10)
+
+            # Update the current room dictionary
+            self.room_dictionary = new_room_dictionary
 
         except Exception as e:
             print(f"Error in get_group_names: {e}")
