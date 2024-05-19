@@ -363,10 +363,10 @@ class HomePage(ttk.Frame):
         formatted_folder_date = self.set_date_format(folder_date)
 
         add_folder_thread = threading.Thread(target=self.client_communicator.handle_add_new_folder_request,
-                                             args=(folder_name, str(folder_size) + " items", folder_date, folder_folder))
+                                             args=(folder_name, folder_size, folder_date, folder_folder))
         add_folder_thread.start()
 
-        self.add_folder_frame(real_folder_name, folder_size, formatted_folder_date)
+        self.add_folder_frame(real_folder_name, str(folder_size) + " items", formatted_folder_date)
 
     def add_folder_frame(self, real_folder_name, folder_size, folder_date):
         file_frame = FileFrame(self.f_file_list, real_folder_name, folder_size, folder_date, is_folder=True,
@@ -453,7 +453,6 @@ class HomePage(ttk.Frame):
                     self.add_file_frame(file_name.replace(" <folder>", ""), formatted_file_size, formatted_file_date,
                                         favorite)
 
-
     def handle_send_file_request(self):
         try:
             filetypes = (
@@ -508,7 +507,6 @@ class HomePage(ttk.Frame):
                 target=self.client_communicator.handle_set_favorite_request_client,
                 args=(file_name, new_value))
             unfavorite_thread.start()
-
 
     def handle_rename_request_client(self, is_folder=False):
         try:

@@ -98,7 +98,7 @@ class UserFiles:
         return formatted_details if formatted_details else "<NO_DATA>"
 
     def delete_file(self, name: str, folder: str):
-        self._execute_query(self.REMOVE_FILE_QUERY, (self.userid_db, name, folder,))
+        self.cur.execute(self.REMOVE_FOLDER_QUERY, (name, folder))
         self.conn.commit()
 
     def delete_folder(self, folder: str):

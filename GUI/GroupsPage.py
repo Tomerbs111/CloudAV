@@ -197,7 +197,6 @@ class GroupsPage(ttk.Frame):
     def can_delete(self):
         return self.permissions[3] == '1'
 
-
     def setup_folder_manager_frame(self):
         self.folder_frame = CTkFrame(master=self)
         self.folder_frame.place(relx=0, rely=0, relwidth=1, relheight=0.05)
@@ -326,7 +325,7 @@ class GroupsPage(ttk.Frame):
 
         return short_filename, formatted_file_size, short_file_date
 
-    def handle_add_new_folder_request(self, folder_name):
+    def handle_add_new_folder_request(self, folder_name, size):
         real_folder_name = folder_name.replace(" <folder>", "")
         folder_date = datetime.datetime.now()
         folder_size = "0"
@@ -643,7 +642,8 @@ class GroupsPage(ttk.Frame):
                         send_folder_thread = threading.Thread(
                             target=self.group_communicator.handle_add_new_folder_request,
                             args=(
-                                folder_name, folder_size, folder_date, os.path.basename(os.path.dirname(path)), self.group_name)
+                                folder_name, folder_size, folder_date, os.path.basename(os.path.dirname(path)),
+                                self.group_name)
                         )
                         send_folder_thread.start()
                     else:  # If it's a file
@@ -666,7 +666,7 @@ class GroupsPage(ttk.Frame):
 
                     count += 1
 
-                self.handle_add_new_folder_request(os.path.basename(folder_path) + " <folder>")
+                self.handle_add_new_folder_request(os.path.basename(folder_path) + " <folder>", 0)
 
         except FileNotFoundError:
             return

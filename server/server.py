@@ -224,7 +224,7 @@ class Server:
 
                 elif received_data.get("FLAG") == "<CREATE_FOLDER>":
                     create_folder_data = received_data.get("DATA")
-                    self.handle_create_folder_action(user_files_manager, create_folder_data)
+                    self.handle_create_folder_action(client_socket, user_files_manager, create_folder_data)
 
                 elif received_data.get("FLAG") == "<SEND>":
                     send_data = received_data.get("DATA")
