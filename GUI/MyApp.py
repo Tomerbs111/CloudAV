@@ -39,7 +39,6 @@ class Page(ttk.Frame):
         self.setup_current_page_frame()
         self.setup_groups_segment()
 
-
     def setup_searchbar_frame(self):
         # Code for setting up the Searchbar frame
         f_searchbar = ttk.Frame(master=self.f_data_center, style="dark")
@@ -203,16 +202,14 @@ class Page(ttk.Frame):
             width=18,
             command=self.handle_create_group_window
         )
-
-        # Create the "Refresh" button
         refresh_button = CTkButton(
             self.group_menu_frame,
             text="",
             compound='right',
             anchor='w',
             image=CTkImage(Image.open("../GUI/file_icons/refresh_icon.png"), size=(20, 20)),
-            command=self.get_group_names(),
             width=18,
+            command=self.handle_create_group_window
         )
 
         # Grid buttons in the same row
@@ -512,10 +509,8 @@ class MyApp(ttk.Window):
         self.user_username = None
         self.user_email = None
 
-
         self.switch_frame("RegistrationApp", self.client_communicator, self.set_user_info)
         self.page = Page(self, self.switch_frame, self.client_communicator, self.current_frame, self.get_user_info)
-
 
     def set_user_info(self, username, email):
         self.user_username = username
