@@ -24,7 +24,7 @@ class Page(ttk.Frame):
         self.communicator = communicator
         self.current_frame = current_frame
 
-        self.room_dictionary = None
+        self.room_dictionary = {}
 
         self.f_data_center = None
         self.f_current_page = None
@@ -209,7 +209,7 @@ class Page(ttk.Frame):
             anchor='w',
             image=CTkImage(Image.open("../GUI/file_icons/refresh_icon.png"), size=(20, 20)),
             width=18,
-            command=self.handle_create_group_window
+            command=self.get_group_names
         )
 
         # Grid buttons in the same row
@@ -334,17 +334,15 @@ class Page(ttk.Frame):
                 ).pack(side='top', pady=5, anchor='w', fill='x', padx=10)
 
     def get_group_names(self):
+
         new_room_dictionary = self.communicator.get_all_groups()
         try:
-            print(new_room_dictionary)
+            print(f"new_room_dictionary: {new_room_dictionary}")
 
-            # Check for differences between the current and new dictionaries
-            removed_rooms = set(self.room_dictionary.keys()) - set(new_room_dictionary.keys())
+            added_rooms = set(new_room_dictionary.keys()) - set(self.room_dictionary.keys())
 
             for room, permissions in new_room_dictionary.items():
-                print(f"Room: {room}, Permissions: {permissions}")
-                # Check if the room is not in the removed rooms set
-                if room not in removed_rooms:
+                if room in added_rooms:
                     CTkButton(
                         self.f_options,
                         text=room,

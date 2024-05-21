@@ -149,7 +149,7 @@ class RegistrationApp(ttk.Frame):
 
         )
         self.email_entry.place(relx=posx, rely=posy + label_height, relwidth=entry_width, relheight=entry_height)
-        self.email_entry.insert(0, "9727calm@fthcapital.com")
+        self.email_entry.insert(0, "jasaxaf511@fincainc.com")
         self.ans_email = ttk.Label(
             master=master,
             text=""
@@ -341,7 +341,7 @@ class RegistrationApp(ttk.Frame):
                     self.after(1000, lambda: self.switch_frame("HomePage", self.client_communicator))
 
 
-class TwoFactorAuthentication(CTkToplevel):
+class TwoFactorAuthentication(ttk.Toplevel):
     def __init__(self, master, client_communicator):
         super().__init__(master)
         self.master = master

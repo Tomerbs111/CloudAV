@@ -216,6 +216,15 @@ class GroupCommunication:
         if self.receive_thread:
             self.receive_thread.join()
 
+    def get_all_groups(self):
+        self.running = False
+        operation_dict = {"FLAG": "<GET_ROOMS>"}
+        self.send_data(self.client_socket, pickle.dumps(operation_dict))
+
+        received_data = pickle.loads(self.recv_data(self.client_socket))
+        all_rooms = received_data.get("DATA")
+        return all_rooms
+
     def handle_broadcasted_group_data(self, on_broadcast_callback):
         try:
             while self.running:

@@ -22,6 +22,7 @@ from queue import Queue
 HOST = '0.0.0.0'
 PORT = 40301
 
+
 # TODO: download folders
 # TODO: refresh groups
 
@@ -318,6 +319,9 @@ class Server:
                     self.handle_leave_group_action(client_socket, identifier, aes_key)
                     break
 
+                elif received_data.get("FLAG") == "<GET_ROOMS>":
+                    self.handle_get_rooms_action(client_socket, identifier, aes_key)
+
                 elif received_data.get("FLAG") == "<LOGOUT>":
                     self.handle_logout_action(client_socket, aes_key)
                     break
@@ -399,7 +403,6 @@ class Server:
                         db_manager.get_file_data(self.get_group_name(client_socket), individual_file, folder_name)[0]
                     file_data_name_dict[individual_file] = file_data
 
-
             elif isinstance(db_manager, UserFiles):
                 for individual_file in select_file_names_lst:
                     file_data = db_manager.get_file_data(individual_file, folder_name)[0]
@@ -429,6 +432,7 @@ class Server:
                 for individual_folder in folder_names_lst:
                     queued_info = {"FLAG": "<DELETE>", "DATA": individual_folder}
                     self.file_queue.put((client_socket, queued_info))
+
                     def delete_folder_recursive(current_folder, folder_name):
                         all_files = db_manager.get_name_file_from_folder_group(self.get_group_name(client_socket),
                                                                                folder_name)
