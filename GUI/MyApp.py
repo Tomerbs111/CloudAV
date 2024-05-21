@@ -335,7 +335,7 @@ class Page(ttk.Frame):
 
     def get_group_names(self):
 
-        new_room_dictionary = self.communicator.get_all_groups()
+        new_room_dictionary = self.current_frame.get_all_groups()
         try:
             print(f"new_room_dictionary: {new_room_dictionary}")
 

@@ -162,8 +162,7 @@ class GroupsPage(ttk.Frame):
         self.group_name = group_name
         self.group_communicator = group_communicator
 
-        self.permissions = permissions
-        print(self.permissions)
+        self.permissions = self.set_permissions(permissions)
         self.admin = admin
         self.is_admin = False
 
@@ -183,7 +182,18 @@ class GroupsPage(ttk.Frame):
         self.setup_folder_manager_frame()
 
         self.users_data = None
+        self.room_data = None
+        self.room_data_event = threading.Event()
         self.users_data_event = threading.Event()
+
+    def set_permissions(self, permissions):
+        if type(permissions) == list:
+            return permissions
+        permissions_lst = []
+        for key, value in permissions.items():
+            permissions_lst.append(value)
+
+        return permissions_lst
 
     def can_upload(self):
         return self.permissions[0] == '1'
@@ -587,9 +597,14 @@ class GroupsPage(ttk.Frame):
 
             elif protocol_flag == "<GET_USERS>":
                 self.users_data = received_data
-
                 # Set the event flag to indicate that data is ready
                 self.users_data_event.set()
+
+
+            elif protocol_flag == "<GET_ROOMS>":
+                self.room_data = received_data
+
+                self.room_data_event.set()
 
         except pickle.UnpicklingError:
             return
@@ -676,7 +691,7 @@ class GroupsPage(ttk.Frame):
         self.users_data_event.clear()
 
         # Call the function to request user data
-        self.group_communicator.get_all_registered_users()
+        threading.Thread(target=self.group_communicator.get_all_registered_users).start()
 
         # Wait until the event is set (flag received)
         self.users_data_event.wait()
@@ -687,3 +702,15 @@ class GroupsPage(ttk.Frame):
     def check_if_admin(self, user_email):
         if user_email == self.admin:
             self.is_admin = True
+
+    def get_all_groups(self):
+        # Set the flag to False initially
+        self.room_data_event.clear()
+
+        threading.Thread(target=self.group_communicator.get_all_groups).start()
+
+        # Wait until the event is set (flag received)
+        self.room_data_event.wait()
+
+        # Once the event is set, return the received data
+        return self.room_data

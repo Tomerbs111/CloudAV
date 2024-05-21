@@ -660,3 +660,6 @@ class HomePage(ttk.Frame):
 
     def get_all_registered_users(self):
         return self.client_communicator.get_all_registered_users()
+
+    def get_all_groups(self):
+        return self.client_communicator.get_all_groups()
