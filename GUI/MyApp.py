@@ -140,6 +140,7 @@ class Page(ttk.Frame):
         ).pack(side='top', pady=5, anchor='w', fill='x', padx=10)
 
         self.group_menu_frame = ttk.Frame(self.f_options, style="dark")
+        self.group_button_frame = (CTkScrollableFrame(self.f_options, fg_color="transparent"))
 
     def show_add_menu(self, event):
         menu = tk.Menu(self.f_options, tearoff=0)
@@ -183,6 +184,7 @@ class Page(ttk.Frame):
 
         # Pack the main frame
         self.group_menu_frame.pack(side='top', fill='x')
+        self.group_button_frame.pack(side='top', fill='both', pady=5, padx=10)
 
         # Create and grid the label
         CTkLabel(
@@ -223,6 +225,9 @@ class Page(ttk.Frame):
         # Adjust the padding and alignment as needed
         self.group_menu_frame.grid_rowconfigure(0, weight=1)
         self.group_menu_frame.grid_rowconfigure(1, weight=1)
+
+        ttk.Separator(self.f_options, orient="horizontal").pack(side='top', fill='x', pady=5, padx=10)
+
 
     def switch_to_groups_page(self, group_name, permissions, room_admin):
         self.user_username, self.user_email = self.get_user_info()
@@ -324,7 +329,7 @@ class Page(ttk.Frame):
 
             if group_name and submitted_participants:
                 CTkButton(
-                    self.f_options,
+                    self.group_button_frame,
                     text=group_name,
                     compound='left',
                     fg_color="transparent",
@@ -344,7 +349,7 @@ class Page(ttk.Frame):
             for room, permissions in new_room_dictionary.items():
                 if room in added_rooms:
                     CTkButton(
-                        self.f_options,
+                        self.group_button_frame,
                         text=room,
                         compound='left',
                         fg_color="transparent",

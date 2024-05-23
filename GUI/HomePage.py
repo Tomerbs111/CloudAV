@@ -490,10 +490,25 @@ class HomePage(ttk.Frame):
         select_file_frames = self.get_checked_file_frames()
         select_file_names_lst = [file_frame.get_filename() for file_frame in select_file_frames]
 
-        receive_thread = threading.Thread(
-            target=self.client_communicator.handle_download_request_client,
-            args=(select_file_names_lst, self.save_path, self.get_current_folder()))
-        receive_thread.start()
+        # Check if any selected file is a folder
+        is_folder_selected = any(file_frame.is_folder for file_frame in select_file_frames)
+
+        if is_folder_selected:
+            # If any selected file is a folder, call recv_folder method
+            for file_frame in select_file_frames:
+                if file_frame.is_folder:
+                    folder_name = file_frame.get_filename()
+                    print("Folder name:", folder_name)
+                    receive_thread = threading.Thread(
+                        target=self.client_communicator.handle_download_folder_request_client,
+                        args=(folder_name, self.save_path))
+                    receive_thread.start()
+        else:
+            # Otherwise, call handle_download_folder_request_client method
+            receive_thread = threading.Thread(
+                target=self.client_communicator.handle_download_folder_request_client,
+                args=(select_file_names_lst, self.save_path, self.get_current_folder()))
+            receive_thread.start()
 
     def handle_favorite_toggle(self, file_frame, new_value):
         file_name = file_frame.get_filename()

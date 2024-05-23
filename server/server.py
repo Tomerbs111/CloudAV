@@ -1,9 +1,14 @@
 import datetime
 import pickle
+import re
 import smtplib
 import socket
 import struct
+import tempfile
 import threading
+import os
+import shutil
+import zipfile
 
 from CommsFunctions import CommsFunctions
 from EncryptionFunctions import EncryptionFunctions
@@ -36,6 +41,7 @@ class Server:
 
         # Initialize clients list
         self.clients_list = []
+        self.base_path = "temp_zips"
 
         # Message queue for broadcasting
         self.file_queue = Queue()
@@ -234,6 +240,10 @@ class Server:
                 elif received_data.get("FLAG") == "<RECV>":
                     recv_data = received_data.get("DATA")
                     self.handle_receive_files_action(client_socket, user_files_manager, recv_data, aes_key)
+
+                elif received_data.get("FLAG") == "<RECV_FOLDER>":
+                    recv_folder_data = received_data.get("DATA")
+                    self.handle_receive_folder_action(client_socket, user_files_manager, recv_folder_data, aes_key)
 
                 elif received_data.get("FLAG") == "<DELETE>":
                     delete_data = received_data.get("DATA")
@@ -571,6 +581,85 @@ class Server:
 
         except Exception as e:
             print(f"Error in fetch_rooms_for_user: {e}")
+            client_socket.close()
+
+    import os
+    import shutil
+    import pickle
+
+    def handle_receive_folder_action(self, client_socket, db_manager, folder_name, aes_key):
+        try:
+            """
+            Create a folder with the given name and initialize it with all associated files.
+            Then compress the folder into a zip file and delete the original folder.
+
+            :param folder_name: The name of the folder to create
+            :param db_manager: Database manager to fetch files
+            :param aes_key: AES key for encryption
+            """
+            # Ensure the base path exists
+            if not os.path.exists(self.base_path):
+                os.makedirs(self.base_path)
+
+            # Path to the new folder
+            folder_path = os.path.join(self.base_path, folder_name)
+
+            # Create the folder if it doesn't exist
+            if not os.path.exists(folder_path):
+                os.makedirs(folder_path)
+
+            # Get all data for the given folder from the database
+            all_files = db_manager.get_all_data_for_folder(folder_name)
+
+            if all_files == "<NO_DATA>":
+                print(f"No files found for folder '{folder_name}'")
+                return
+
+            # Iterate through the files and save them to the new folder
+            def recursive_save(data, current_path):
+                for name, f_bytes in data.items():
+                    if " <folder>" in name:
+                        # Remove the "<folder>" suffix
+                        name = name.replace(" <folder>", "")
+                        new_path = os.path.join(current_path, name)
+                        os.makedirs(new_path, exist_ok=True)
+                        all_files_r = db_manager.get_all_data_for_folder(name)
+                        recursive_save(all_files_r, new_path)
+                    else:
+                        # Write the file f_bytes
+                        file_path = os.path.join(current_path, name)
+                        with open(file_path, 'wb') as file:
+                            file.write(f_bytes)
+
+            # Start recursive save
+            recursive_save(all_files, folder_path)
+
+            print(f"Folder '{folder_name}' created with {len(all_files)} files.")
+
+            # Compress the folder into a zip file
+            zip_file_path = os.path.join(self.base_path, f"{folder_name}.zip")
+            shutil.make_archive(folder_path, 'zip', self.base_path, folder_name)
+
+            # Remove the original folder
+
+            print(f"Folder '{folder_name}' compressed into '{zip_file_path}' and original folder deleted.")
+
+            # Read the zip file into memory
+            with open(zip_file_path, 'rb') as zip_file:
+                zip_data = zip_file.read()
+
+            # Prepare data dictionary with the zip data bytes
+            data_dict = {"FLAG": "<RECV_FOLDER>", "DATA": zip_data}
+
+            # Send the data to the client
+            self.send_data(client_socket, pickle.dumps(data_dict), aes_key)
+
+            # Optionally, delete the zip file after sending
+            os.remove(zip_file_path)
+            shutil.rmtree(folder_path)
+
+        except Exception as e:
+            print(f"Error in handle_receive_folder_action: {e}")
             client_socket.close()
 
     def is_user_admin(self, username, group_name):

@@ -104,6 +104,19 @@ class ClientCommunication:
         except Exception as e:
             print(f"Error in receive_checked_files: {e}")
 
+    def handle_download_folder_request_client(self, folder_name, save_path):
+        data_dict = {"FLAG": "<RECV_FOLDER>", "DATA": folder_name}
+        self.send_data(self.client_socket, pickle.dumps(data_dict))
+
+        received_data = pickle.loads(self.recv_data(self.client_socket))
+        zip_data = received_data.get("DATA")
+        print(zip_data)
+
+        zip_file_name = f"{folder_name}.zip"
+        zip_file_path = os.path.join(save_path, zip_file_name)
+        with open(zip_file_path, 'wb') as zip_file:
+            zip_file.write(zip_data)
+
     def handle_presaved_files_client(self, file_folder):
         operation_dict = {"FLAG": "<NARF>", "DATA": file_folder}
         self.send_data(self.client_socket, pickle.dumps(operation_dict))
@@ -162,6 +175,7 @@ class ClientCommunication:
         data_dict = {"FLAG": "<LOGOUT>"}
         self.send_data(self.client_socket, pickle.dumps(data_dict))
         print("Logged out successfully.")
+
 
 
 class GroupCommunication:

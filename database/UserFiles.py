@@ -46,6 +46,10 @@ class UserFiles:
         SELECT Name, Size, Date, Favorite, Folder FROM Files WHERE Owner = ? AND Folder = ?;
     '''
 
+    GET_ALL_DATA_DOWNLOAD_QUERY = '''
+        SELECT Name, FileBytes FROM Files WHERE Owner = ? AND Folder = ?;
+    '''
+
     RENAME_FILE_QUERY = '''
         UPDATE Files SET Name = ? WHERE Owner = ? AND Name = ? AND Folder = ?;
     '''
@@ -141,10 +145,21 @@ class UserFiles:
         self._execute_query(self.SET_FOLDER_QUERY, (folder, self.userid_db, file_name))
         self.conn.commit()
 
+    def get_all_data_for_folder(self, folder: str):
+        """
+        Retrieve all data for items that have the same folder name as the provided name.
+        """
+        all_details = self._execute_query(self.GET_ALL_DATA_DOWNLOAD_QUERY, (self.userid_db, folder))
+        formatted_details = {}
+        for detail in all_details:
+            name, filebytes = detail
+            formatted_details[name] = filebytes
+        return formatted_details if formatted_details else "<NO_DATA>"
+
     def close_connection(self):
         self.conn.close()
 
 
 if __name__ == '__main__':
     db_manager = UserFiles('1')
-    print(db_manager.get_folder_data("fd1"))
+    print(db_manager.get_all_data_for_folder("Room"))
