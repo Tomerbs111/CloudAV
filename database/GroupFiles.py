@@ -132,6 +132,7 @@ class GroupFiles:
 
     def get_file_info(self, group_name: str, name: str, folder: str):
         result = self._execute_query(self.GET_FILE_INFO_QUERY, (group_name, self.owner_id, name, folder))
+        favorite = self.get_favorite_status(name, group_name)
         if result:
             # Assuming that result is a list containing a single tuple
             return result[0]  # Return the first tuple from the result list
