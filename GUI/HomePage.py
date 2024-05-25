@@ -517,6 +517,8 @@ class HomePage(ttk.Frame):
 
     def handle_favorite_toggle(self, file_frame, new_value):
         file_name = file_frame.get_filename()
+        if file_frame.is_folder:
+            file_name = file_name + " <folder>"
         if new_value == "on":
             favorite_thread = threading.Thread(
                 target=self.client_communicator.handle_set_favorite_request_client,
