@@ -296,6 +296,19 @@ class GroupCommunication:
         except Exception as e:
             print(f"Error in receive_checked_files: {e}")
 
+    def handle_set_favorite_request_group(self, file_name, switch_value):
+        if switch_value == "on":
+            data_dict_on = {"FLAG": '<FAVORITE>', "DATA": file_name}
+            self.send_data(self.client_socket, pickle.dumps(data_dict_on))
+
+            print(f"File '{file_name}' favorited.")
+
+        elif switch_value == "off":
+            data_dict_off = {"FLAG": '<UNFAVORITE>', "DATA": file_name}
+            self.send_data(self.client_socket, pickle.dumps(data_dict_off))
+
+            print(f"File '{file_name}' unfavorited.")
+
     def handle_download_folder_request_group(self, folder_name, save_path):
         data_dict = {"FLAG": "<RECV_FOLDER>", "DATA": folder_name}
         self.send_data(self.client_socket, pickle.dumps(data_dict))
@@ -341,7 +354,7 @@ class GroupCommunication:
 
 # ------------Client setup------------
 HOST = '127.0.0.1'  # '192.168.1.152'
-PORT = 40301
+PORT = 40302
 
 
 class MainClient:
