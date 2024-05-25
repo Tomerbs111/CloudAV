@@ -472,22 +472,40 @@ class GroupsPage(ttk.Frame):
 
         self.add_file_frame(short_filename, formatted_file_size, short_file_date, group_file_owner="self")
 
+    import threading
+
     def handle_download_request_group(self):
         if not self.can_download() and self.is_admin is False:
             print("You are not authorized to download data.")
             tk.messagebox.showinfo(title="Error", message="You are not authorized to download data.")
             return
+
         select_file_frames = self.get_checked_file_frames()
         select_file_names_lst = [file_frame.get_filename() for file_frame in select_file_frames]
+
+        # Check if any selected file is a folder
+        is_folder_selected = any(file_frame.is_folder for file_frame in select_file_frames)
 
         print(f"select_file_frames: {select_file_frames}")
         print(f"select_file_names_lst: {select_file_names_lst}")
         print(f"self.get_current_folder(): {self.get_current_folder()}")
 
-        receive_thread = threading.Thread(
-            target=self.group_communicator.handle_download_request_group,
-            args=(select_file_names_lst, self.save_path, self.get_current_folder()))
-        receive_thread.start()
+        if is_folder_selected:
+            # If any selected file is a folder, handle folder downloads
+            for file_frame in select_file_frames:
+                if file_frame.is_folder:
+                    folder_name = file_frame.get_filename()
+                    print("Folder name:", folder_name)
+                    receive_thread = threading.Thread(
+                        target=self.group_communicator.handle_download_folder_request_group,
+                        args=(folder_name, self.save_path))
+                    receive_thread.start()
+        else:
+            # Otherwise, handle file downloads
+            receive_thread = threading.Thread(
+                target=self.group_communicator.handle_download_request_group,
+                args=(select_file_names_lst, self.save_path, self.get_current_folder()))
+            receive_thread.start()
 
     def handle_saving_broadcasted_files(self, file_data_name_dict, save_path):
         for indiv_filename, indiv_filebytes in file_data_name_dict.items():
@@ -599,6 +617,9 @@ class GroupsPage(ttk.Frame):
                 self.users_data = received_data
                 # Set the event flag to indicate that data is ready
                 self.users_data_event.set()
+
+            elif protocol_flag == "<RECV_FOLDER>":
+                self.handle_save_folder(received_data)
 
 
             elif protocol_flag == "<GET_ROOMS>":
@@ -714,3 +735,10 @@ class GroupsPage(ttk.Frame):
 
         # Once the event is set, return the received data
         return self.room_data
+
+    def handle_save_folder(self, recived_data):
+        zip_file_name = f"{recived_data[1]}.zip"
+        zip_data = recived_data[0]
+        zip_file_path = os.path.join(self.save_path, zip_file_name)
+        with open(zip_file_path, 'wb') as zip_file:
+            zip_file.write(zip_data)

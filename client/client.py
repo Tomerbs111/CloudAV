@@ -109,7 +109,7 @@ class ClientCommunication:
         self.send_data(self.client_socket, pickle.dumps(data_dict))
 
         received_data = pickle.loads(self.recv_data(self.client_socket))
-        zip_data = received_data.get("DATA")
+        zip_data = received_data.get("DATA")[0]
         print(zip_data)
 
         zip_file_name = f"{folder_name}.zip"
@@ -295,6 +295,10 @@ class GroupCommunication:
 
         except Exception as e:
             print(f"Error in receive_checked_files: {e}")
+
+    def handle_download_folder_request_group(self, folder_name, save_path):
+        data_dict = {"FLAG": "<RECV_FOLDER>", "DATA": folder_name}
+        self.send_data(self.client_socket, pickle.dumps(data_dict))
 
     def handle_presaved_files_group(self, file_folder):
         try:

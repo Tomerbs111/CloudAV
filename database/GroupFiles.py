@@ -54,6 +54,10 @@ class GroupFiles:
         UPDATE GroupFiles SET Folder = ? WHERE Owner = ? AND GroupName = ? AND Folder = ?;
     '''
 
+    GET_ALL_DATA_DOWNLOAD_QUERY = '''
+        SELECT Name, FileBytes FROM GroupFiles WHERE GroupName = ? AND Folder = ?;
+    '''
+
     def __init__(self, userid: str, database_path='../database/User_info.db'):
         self.conn = sqlite3.connect(database_path)
         self.cur = self.conn.cursor()
@@ -69,7 +73,8 @@ class GroupFiles:
 
     def insert_file(self, name: str, size: int, date: datetime, group_name: str, folder: str, filebytes: bytes):
         encoded_date = pickle.dumps(date)  # Serialize datetime object to bytes
-        self._execute_query(self.INSERT_FILE_QUERY, (self.owner_id, name, size, encoded_date, group_name, folder, filebytes))
+        self._execute_query(self.INSERT_FILE_QUERY,
+                            (self.owner_id, name, size, encoded_date, group_name, folder, filebytes))
         self.conn.commit()
 
     def get_all_files_from_group(self, group_name: str, folder_name: str):
@@ -114,6 +119,18 @@ class GroupFiles:
         self._execute_query(self.RENAME_FOLDER_FILES_QUERY,
                             (new_folder_name, self.owner_id, group_name, old_folder_name))
         self.conn.commit()
+
+    def get_all_data_for_folder(self, group_name: str, folder: str):
+        """
+        Retrieve all data for items that have the same folder name as the provided name.
+        """
+        all_details = self._execute_query(self.GET_ALL_DATA_DOWNLOAD_QUERY, (group_name, folder))
+        formatted_details = {}
+        for detail in all_details:
+            name, filebytes = detail
+            formatted_details[name] = filebytes
+        return formatted_details if formatted_details else "<NO_DATA>"
+
     def close_connection(self):
         self.conn.close()
 
