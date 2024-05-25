@@ -506,7 +506,7 @@ class HomePage(ttk.Frame):
         else:
             # Otherwise, call handle_download_folder_request_client method
             receive_thread = threading.Thread(
-                target=self.client_communicator.handle_download_folder_request_client,
+                target=self.client_communicator.handle_download_request_client,
                 args=(select_file_names_lst, self.save_path, self.get_current_folder()))
             receive_thread.start()
 
