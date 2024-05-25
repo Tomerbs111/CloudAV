@@ -366,14 +366,19 @@ class HomePage(ttk.Frame):
                                              args=(folder_name, folder_size, folder_date, folder_folder))
         add_folder_thread.start()
 
-        self.add_folder_frame(real_folder_name, str(folder_size) + " items", formatted_folder_date)
+        self.add_folder_frame(real_folder_name, str(folder_size) + " items", formatted_folder_date, 0)
 
-    def add_folder_frame(self, real_folder_name, folder_size, folder_date):
-        file_frame = FileFrame(self.f_file_list, real_folder_name, folder_size, folder_date, is_folder=True,
+    def add_folder_frame(self, real_folder_name, folder_size, folder_date, favorite):
+        file_frame = FileFrame(self.f_file_list, real_folder_name, folder_size, folder_date, favorite_callback=self.handle_favorite_toggle, is_folder=True,
                                click_callback=self.folder_clicked)
         file_frame.pack(expand=True, fill='x', side='top')
         self.file_frames.append(file_frame)
         self.file_frame_counter += 1
+
+        if favorite == 1:
+            file_frame.favorite_button.configure(
+                image=CTkImage(Image.open("../GUI/file_icons/star_icon_light.png"), size=(20, 20)))
+            file_frame.check_favorite.set("on")
 
     def folder_clicked(self, folder_name):
         print(f"Folder clicked: {folder_name}")
@@ -447,7 +452,7 @@ class HomePage(ttk.Frame):
 
                 if " <folder>" in file_name:
                     formatted_file_size = str(file_bytes) + " items"
-                    self.add_folder_frame(file_name.replace(" <folder>", ""), formatted_file_size, formatted_file_date)
+                    self.add_folder_frame(file_name.replace(" <folder>", ""), formatted_file_size, formatted_file_date, favorite)
                 else:
                     formatted_file_size = self.set_size_format(file_bytes)
                     self.add_file_frame(file_name.replace(" <folder>", ""), formatted_file_size, formatted_file_date,
