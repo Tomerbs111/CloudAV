@@ -112,8 +112,7 @@ class GroupFiles:
 
     def get_file_data(self, group_name: str, name: str, folder: str):
         result = self._execute_query(self.GET_FILE_DATA_QUERY, (group_name, self.owner_id, name, folder))
-        print(result)
-        return result
+        return result[0]
 
     def rename_folder_files(self, group_name: str, old_folder_name: str, new_folder_name: str):
         self._execute_query(self.RENAME_FOLDER_FILES_QUERY,
