@@ -440,9 +440,8 @@ class Server:
 
     def handle_delete_file_action(self, client_socket, db_manager, delete_data):
         try:
-
-            folder_names_lst = delete_data[0]
-            file_names_lst = delete_data[1]
+            file_names_lst = delete_data[0]
+            folder_names_lst = delete_data[1]
             current_folder = delete_data[2]
 
             if isinstance(db_manager, GroupFiles):

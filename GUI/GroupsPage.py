@@ -397,7 +397,7 @@ class GroupsPage(ttk.Frame):
                                                  folder_name, folder_size, folder_date, folder_folder, self.group_name))
         add_folder_thread.start()
 
-        self.add_folder_frame(real_folder_name, folder_size, formatted_folder_date, self.owner)
+        self.add_folder_frame(real_folder_name, folder_size, formatted_folder_date, self.owner, 0)
 
     def add_folder_frame(self, real_folder_name, folder_size, folder_date, group_folder_owner, favorite):
         file_frame = GroupFileFrame(self.f_file_list, real_folder_name, folder_size, folder_date, group_folder_owner,
