@@ -362,7 +362,7 @@ class GroupCommunication:
 
 # ------------Client setup------------
 HOST = '127.0.0.1'  # '192.168.1.152'
-PORT = 40302
+PORT = 40301
 
 
 class MainClient:

@@ -5,16 +5,15 @@ import customtkinter
 import ttkbootstrap as ttk
 from customtkinter import *
 from PIL import Image, ImageTk
+from datetime import datetime
 
 import datetime
 
 
 class FileFrame(ttk.Frame):
-    def __init__(self, master, fname, ftype, fsize, fdate, favorite_callback=None, is_folder=False, click_callback=None):
+    def __init__(self, master, fname, ftype, favorite_callback=None, is_folder=False, click_callback=None):
         super().__init__(master)
         self.fname = fname
-        self.fsize = fsize
-        self.fdate = fdate
         self.ftype = ftype
         self.is_folder = is_folder
         self.click_callback = click_callback  # Callback function for click event
@@ -88,23 +87,6 @@ class FileFrame(ttk.Frame):
         )
         self.lu_filename.pack(side='left', padx=(0, 5), pady=5, anchor='w')
         self.lu_filename.bind("<Button-1>", self.on_click)  # Bind left mouse button click event
-
-        self.lu_type = ttk.Label(
-            master=self,
-            text=self.ftype,
-            font=("Arial", text_size),
-            cursor="hand2"  # Change cursor to hand2 to indicate it's clickable
-        )
-        self.lu_filename.pack(side='left', padx=(0, 5), pady=5, anchor='w')
-        self.lu_filename.bind("<Button-1>", self.on_click)  # Bind left mouse button click event
-
-        # Pack the size label with proper alignment
-        self.lu_size = ttk.Label(
-            master=self,
-            text=self.fsize,
-            font=("Arial", text_size)
-        )
-        self.lu_size.pack(side='right', padx=(0, 27), pady=5, anchor='e')  # Adjust padx as needed
 
         # Pack the date label with proper alignment
         self.lu_date_mod = ttk.Label(
@@ -289,8 +271,8 @@ class FavoritesPage(ttk.Frame):
         f_file_properties.place(relx=0, rely=0, relwidth=1, relheight=0.08)
 
         CTkButton(master=f_file_properties, text="Name", command=self.sort_by_name).pack(side='left', padx=5)
-        CTkButton(master=f_file_properties, text="Size").pack(side='right', padx=10)
-        CTkButton(master=f_file_properties, text="Upload date").pack(side='right', padx=10)
+        CTkButton(master=f_file_properties, text="Type").pack(side='right', padx=10)
+        CTkButton(master=f_file_properties, text="Status").pack(side='right', padx=10)
 
         ttk.Separator(combined_frame, orient="horizontal").place(relx=0, rely=0.08, relwidth=1)
 
@@ -376,10 +358,10 @@ class FavoritesPage(ttk.Frame):
                                              args=(folder_name, folder_size, folder_date, folder_folder))
         add_folder_thread.start()
 
-        self.add_folder_frame(real_folder_name, "Folder", str(folder_size) + " items", formatted_folder_date, 0)
+        self.add_folder_frame(real_folder_name, "Folder", 0)
 
-    def add_folder_frame(self, real_folder_name, use_type, folder_size, folder_date, favorite):
-        file_frame = FileFrame(self.f_file_list, real_folder_name, use_type, folder_size, folder_date,
+    def add_folder_frame(self, real_folder_name, use_type, favorite):
+        file_frame = FileFrame(self.f_file_list, real_folder_name, use_type,
                                favorite_callback=self.handle_favorite_toggle, is_folder=True,
                                click_callback=self.folder_clicked)
         file_frame.pack(expand=True, fill='x', side='top')
@@ -446,8 +428,8 @@ class FavoritesPage(ttk.Frame):
 
         return checked_file_frames_list
 
-    def add_file_frame(self, file_name, use_type, file_size, file_date, favorite):
-        file_frame = FileFrame(self.f_file_list, file_name, use_type, file_size, file_date,
+    def add_file_frame(self, file_name, use_type, favorite):
+        file_frame = FileFrame(self.f_file_list, file_name, use_type,
                                favorite_callback=self.handle_favorite_toggle)
         file_frame.pack(expand=True, fill='x', side='top')
         self.file_frames.append(file_frame)
@@ -477,15 +459,9 @@ class FavoritesPage(ttk.Frame):
         narf_answer = self.client_communicator.get_all_favorites()
 
         for individual_file in narf_answer:
-            owner, name, use_type, size, pickled_date, favorite = individual_file
-            date = pickle.loads(pickled_date)
-            formatted_file_date = self.set_date_format(date)
+            owner, name, use_type, favorite = individual_file
 
             if " <folder>" in name:
-                formatted_file_size = str(size) + " items"
-                self.add_folder_frame(name.replace(" <folder>", ""), use_type, formatted_file_size, formatted_file_date,
-                                      favorite)
+                self.add_folder_frame(name.replace(" <folder>", ""), use_type, favorite)
             else:
-                formatted_file_size = self.set_size_format(size)
-                self.add_file_frame(name.replace(" <folder>", ""), use_type, formatted_file_size, formatted_file_date,
-                                    favorite)
+                self.add_file_frame(name.replace(" <folder>", ""), use_type, favorite)

@@ -137,7 +137,7 @@ class UserFiles:
             actual_date = date_tuple[0][0]  # Extract the first element from the tuple
             return actual_date
         else:
-            raise ValueError("No date found for the given file name.")
+            return datetime.now()
 
     def get_favorite_status(self, file_name: str) -> int:
         status = self._execute_query(self.GET_FAVORITE_STATUS_QUERY, (self.userid_db, file_name))

@@ -1,6 +1,4 @@
 import sqlite3
-from datetime import datetime
-
 
 class FavoritesManager:
     CREATE_TABLE_QUERY_FAVORITES = '''
@@ -9,15 +7,13 @@ class FavoritesManager:
             Owner TEXT NOT NULL,
             Name TEXT NOT NULL,
             Type TEXT NOT NULL,
-            Size INTEGER,
-            Date TEXT,
             Favorite INTEGER DEFAULT 0
         );
     '''
 
     INSERT_FAVORITE_QUERY = '''
-        INSERT INTO Favorites (Owner, Name, Type, Size, Date, Favorite)
-        VALUES (?, ?, ?, ?, ?, ?);
+        INSERT INTO Favorites (Owner, Name, Type, Favorite)
+        VALUES (?, ?, ?, ?);
     '''
 
     REMOVE_FAVORITE_QUERY = '''
@@ -29,11 +25,11 @@ class FavoritesManager:
     '''
 
     SET_FAVORITE_STATUS_QUERY = '''
-        UPDATE Favorites SET Size = ?, Date = ?, Favorite = ? WHERE Owner = ? AND Name = ? AND Type = ?;
+        UPDATE Favorites SET Favorite = ? WHERE Owner = ? AND Name = ? AND Type = ?;
     '''
 
     GET_FAVORITES_STATUS_FROM_TYPE_QUERY = '''
-        SELECT Owner, Name, Type, Size, Date, Favorite FROM Favorites WHERE Owner = ?;
+        SELECT Owner, Name, Type, Favorite FROM Favorites WHERE Owner = ? AND Favorite = 1;
     '''
 
     def __init__(self, userid: str, database_path='../database/User_info.db'):
@@ -49,8 +45,8 @@ class FavoritesManager:
         else:
             return self.cur.execute(query).fetchall()
 
-    def insert_favorite(self, name: str, file_type: str, size: int, date: str, favorite: int):
-        self._execute_query(self.INSERT_FAVORITE_QUERY, (self.userid, name, file_type, size, date, favorite))
+    def insert_favorite(self, name: str, file_type: str, favorite: int):
+        self._execute_query(self.INSERT_FAVORITE_QUERY, (self.userid, name, file_type, favorite))
         self.conn.commit()
 
     def remove_favorite(self, name: str, file_type: str):
@@ -61,17 +57,9 @@ class FavoritesManager:
         status = self._execute_query(self.GET_FAVORITE_STATUS_QUERY, (self.userid, name, file_type))
         return status[0][0] if status else None
 
-    def set_favorite_status(self, name: str, file_type: str, size: int, date: str, favorite: int):
+    def set_favorite_status(self, name: str, file_type: str, favorite: int):
         try:
-            # Check if the favorite record exists
-            status = self.get_favorite_status(name, file_type)
-            if status[2] is None:
-                # If it doesn't exist, insert a new favorite record
-                self.insert_favorite(name, file_type, size, date, favorite)
-            else:
-                # Otherwise, update the existing record
-                self._execute_query(self.SET_FAVORITE_STATUS_QUERY,
-                                    (size, date, favorite, self.userid, name, file_type))
+            self._execute_query(self.SET_FAVORITE_STATUS_QUERY, (favorite, self.userid, name, file_type))
             self.conn.commit()
         except Exception as e:
             print(f"Error in set_favorite_status: {e}")
@@ -82,7 +70,6 @@ class FavoritesManager:
 
     def close_connection(self):
         self.conn.close()
-
 
 if __name__ == '__main__':
     test = FavoritesManager('jasaxaf511@fincainc.com')

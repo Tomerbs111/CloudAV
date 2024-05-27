@@ -26,7 +26,7 @@ from GroupUser import GroupUser
 from queue import Queue
 
 HOST = '0.0.0.0'
-PORT = 40302
+PORT = 40301
 
 
 # TODO: download folders
@@ -536,46 +536,42 @@ class Server:
             print("Folder renamed successfully.")
 
     def handle_favorite_file_action(self, client_socket, db_manager, favorite_manager, favorite_file_name):
-        try:
-            if isinstance(db_manager, UserFiles):
-                # If db_manager is an instance of UserFiles
-                db_manager.set_favorite_status(favorite_file_name, 1)
-                date = db_manager.get_file_date(favorite_file_name)
-                size = db_manager.get_file_size(favorite_file_name)
-                favorite_manager.set_favorite_status(favorite_file_name, 'personal', size, date, 1)
-                print("Personal file favorited successfully.")
-            elif isinstance(db_manager, GroupFiles):
-                # If db_manager is an instance of GroupFiles
-                group_name = self.get_group_name(client_socket)
-                date = db_manager.get_file_date(group_name, favorite_file_name)
-                size = db_manager.get_file_size(group_name, favorite_file_name)
-                favorite_manager.set_favorite_status(favorite_file_name, group_name, size, date, 1)
-                print("Group file favorited successfully.")
+        if isinstance(db_manager, UserFiles):
+            db_manager.set_favorite_status(favorite_file_name, 1)
+            if favorite_manager.get_favorite_status(favorite_file_name, 'personal') is None:
+                favorite_manager.insert_favorite(favorite_file_name, 'personal', 1)
             else:
-                print("Unknown database manager type.")
-        except Exception as e:
-            print(f"Error in handle_favorite_file_action: {e}")
-            client_socket.close()
+                favorite_manager.set_favorite_status(favorite_file_name, 'personal', 1)
+            print("Personal file favorited successfully.")
+
+        elif isinstance(db_manager, GroupFiles):
+            group_name = self.get_group_name(client_socket)
+            if favorite_manager.get_favorite_status(favorite_file_name, group_name) is None:
+                favorite_manager.insert_favorite(favorite_file_name, group_name, 1)
+            else:
+                favorite_manager.set_favorite_status(favorite_file_name, group_name, 1)
+            print("Group file favorited successfully.")
+        else:
+            print("Unknown database manager type.")
 
     def handle_unfavorite_file_action(self, client_socket, db_manager, favorite_manager, unfavorite_file_name):
-        try:
-            if isinstance(db_manager, UserFiles):
-                # If db_manager is an instance of UserFiles
-                db_manager.set_favorite_status(unfavorite_file_name, 0)
-                date = db_manager.get_file_date(unfavorite_file_name)
-                size = db_manager.get_file_size(unfavorite_file_name)
-                favorite_manager.set_favorite_status(unfavorite_file_name, 'personal', size, date, 1)
-                print("Personal file unfavorited successfully.")
-            elif isinstance(db_manager, GroupFiles):
-                # If db_manager is an instance of GroupFiles
-                group_name = self.get_group_name(client_socket)
-                favorite_manager.set_favorite_status(unfavorite_file_name, group_name, 0)
-                print("Group file unfavorited successfully.")
+        if isinstance(db_manager, UserFiles):
+            db_manager.set_favorite_status(unfavorite_file_name, 0)
+            if favorite_manager.get_favorite_status(unfavorite_file_name, 'personal') is None:
+                favorite_manager.insert_favorite(unfavorite_file_name, 'personal', 0)
             else:
-                print("Unknown database manager type.")
-        except Exception as e:
-            print(f"Error in handle_favorite_file_action: {e}")
-            client_socket.close()
+                favorite_manager.set_favorite_status(unfavorite_file_name, 'personal', 0)
+            print("Personal file favorited successfully.")
+
+        elif isinstance(db_manager, GroupFiles):
+            group_name = self.get_group_name(client_socket)
+            if favorite_manager.get_favorite_status(unfavorite_file_name, group_name) is None:
+                favorite_manager.insert_favorite(unfavorite_file_name, group_name, 0)
+            else:
+                favorite_manager.set_favorite_status(unfavorite_file_name, group_name, 0)
+            print("Group file favorited successfully.")
+        else:
+            print("Unknown database manager type.")
 
     def handle_get_all_favorites_action(self, client_socket, favorite_manager, aes_key):
         all_favorites = favorite_manager.get_all_favorites()
