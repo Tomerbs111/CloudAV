@@ -7,6 +7,7 @@ import tkinter as tk
 from GUI.RegistrationApp import RegistrationApp
 from GUI.GroupsPage import GroupsPage
 from GUI.HomePage import HomePage
+from GUI.FavoritesPage import FavoritesPage
 
 
 class Page(ttk.Frame):
@@ -114,18 +115,9 @@ class Page(ttk.Frame):
             text="Favorites",
             image=CTkImage(Image.open("../GUI/file_icons/star_icon.png"), size=(20, 20)),
             compound='left',
+            command=self.switch_to_favorites_page,
             anchor='w',
             fg_color='transparent'
-        ).pack(side='top', pady=5, anchor='w', fill='x', padx=10)
-
-        CTkButton(
-            self.f_options,
-            text="Recycle bin",
-            image=CTkImage(Image.open("../GUI/file_icons/trash_icon.png"), size=(20, 20)),
-            compound='left',
-            anchor='w',
-            fg_color='transparent'
-
         ).pack(side='top', pady=5, anchor='w', fill='x', padx=10)
 
         CTkButton(
@@ -253,6 +245,14 @@ class Page(ttk.Frame):
         if self.current_frame.__class__.__name__ != "HomePage":
             print("Switching to home page")
             self.switch_frame("HomePage", self.communicator)
+
+    def switch_to_favorites_page(self):
+        self.user_username, self.user_email = self.get_user_info()
+        if self.current_frame.__class__.__name__ == "GroupsPage":
+            threading.Thread(target=self.current_frame.group_communicator.handle_leave_group_request).start()
+        if self.current_frame.__class__.__name__ != "FavoritesPage":
+            print("Switching to favorites page")
+            self.switch_frame("FavoritesPage", self.communicator)
 
     def setup_new_folder_dialog(self):
         self.add_folder_dialog = CTkToplevel(self)
@@ -565,3 +565,20 @@ class MyApp(ttk.Window):
 
         elif frame_class == "Logout":
             self.destroy()
+
+        elif frame_class == "FavoritesPage":
+            new_frame = FavoritesPage(self.page.f_current_page, self.switch_frame, self.client_communicator)
+
+            if self.current_frame:
+                self.current_frame.pack_forget()
+
+            self.page.pack(fill="both", expand=True)
+            new_frame.pack(fill="both", expand=True)
+
+            self.page.current_frame = new_frame
+            self.current_frame = new_frame
+
+            if not self.loaded:
+                self.page.after(500, self.page.get_group_names)
+                self.loaded = True
+

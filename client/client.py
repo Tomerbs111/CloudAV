@@ -171,6 +171,14 @@ class ClientCommunication:
         all_rooms = received_data.get("DATA")
         return all_rooms
 
+    def get_all_favorites(self):
+        operation_dict = {"FLAG": "<GET_FAVORITES>"}
+        self.send_data(self.client_socket, pickle.dumps(operation_dict))
+
+        received_data = pickle.loads(self.recv_data(self.client_socket))
+        all_favorites = received_data.get("DATA")
+        return all_favorites
+
     def log_out(self):
         data_dict = {"FLAG": "<LOGOUT>"}
         self.send_data(self.client_socket, pickle.dumps(data_dict))

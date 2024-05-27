@@ -447,6 +447,7 @@ class HomePage(ttk.Frame):
             return
         for individual_file in narf_answer:
             (file_name, file_bytes, file_date, favorite, folder) = individual_file
+            print(f"file date{file_date}")
             if folder == self.get_current_folder():
                 formatted_file_date = self.set_date_format(file_date)
 
