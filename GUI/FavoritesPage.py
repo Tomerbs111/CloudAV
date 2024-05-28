@@ -213,43 +213,9 @@ class FavoritesPage(ttk.Frame):
 
     def setup_file_actions_frame(self):
         f_action = ttk.Frame(master=self)
-        f_action.place(relx=0, rely=0.06, relwidth=1, relheight=0.05)
-
-        delete_button = CTkButton(
-            master=f_action,
-            image=CTkImage(Image.open("../GUI/file_icons/trash_icon.png"), size=(20, 20)),
-            compound='left',
-            text="Delete",
-            width=30,
-            # command=self.handle_delete_request_client,
-            fg_color='transparent'
-        )
-        delete_button.pack(side='left', padx=5)
-
-        download_button = CTkButton(
-            master=f_action,
-            # command=self.handle_download_request_client,
-            image=CTkImage(Image.open("../GUI/file_icons/download_icon.png"), size=(20, 20)),
-            compound='left',
-            text="Download",
-            width=30,
-            fg_color='transparent'
-        )
-        download_button.pack(side='left', padx=5)
-
-        self.rename_button = CTkButton(
-            master=f_action,
-            image=CTkImage(Image.open("../GUI/file_icons/rename_icon.png"), size=(20, 20)),
-            compound='left',
-            text="Rename",
-            width=30,
-            # command=self.handle_rename_request_client,
-            fg_color='transparent'
-        )
-        self.rename_button.pack(side='left', padx=5)
 
         combined_frame = CTkFrame(master=self)
-        combined_frame.place(relx=0, rely=0.11, relwidth=1, relheight=0.89)
+        combined_frame.place(relx=0, rely=0.06, relwidth=1, relheight=0.89)
 
         f_file_properties = CTkFrame(master=combined_frame, fg_color='transparent')
         f_file_properties.place(relx=0, rely=0, relwidth=1, relheight=0.08)
