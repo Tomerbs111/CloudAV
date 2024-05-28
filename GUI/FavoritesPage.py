@@ -112,7 +112,7 @@ class FileFrame(ttk.Frame):
 
     def on_click(self, event):
         if self.is_folder and self.click_callback:
-            self.click_callback(self.fname)
+            self.click_callback(self.fname, self.ftype)
         else:
             self.check_var.set("on")
 
@@ -121,6 +121,9 @@ class FileFrame(ttk.Frame):
 
     def get_filename(self):
         return self.fname
+
+    def get_ftype(self):
+        return self.ftype
 
     def set_filename(self, fname):
         self.fname = fname
@@ -172,7 +175,7 @@ class FileFrame(ttk.Frame):
 class FavoritesPage(ttk.Frame):
     customtkinter.set_appearance_mode("dark")
 
-    def __init__(self, parent, switch_frame, client_communicator):
+    def __init__(self, parent, switch_frame, client_communicator, switch_current_folder):
         super().__init__(parent)
         self.parent_app = parent
         self.switch_frame = switch_frame
@@ -189,6 +192,7 @@ class FavoritesPage(ttk.Frame):
         self.name_sort_order = 'ascending'  # Keep track of the current sorting order
         self.clicked_folders = []
         self.current_folder = "Home"  # Initialize current folder to "Home" by default
+        self.switch_current_folder = switch_current_folder
 
         self.setup_folder_manager_frame()
         self.setup_file_actions_frame()
@@ -243,26 +247,6 @@ class FavoritesPage(ttk.Frame):
             fg_color='transparent'
         )
         self.rename_button.pack(side='left', padx=5)
-
-        shared_button = CTkButton(
-            master=f_action,
-            image=CTkImage(Image.open("../GUI/file_icons/shared_icon.png"), size=(20, 20)),
-            compound='left',
-            text="Share",
-            width=30,
-            fg_color='transparent'
-        )
-        shared_button.pack(side='left', padx=5)
-
-        copy_button = CTkButton(
-            master=f_action,
-            image=CTkImage(Image.open("../GUI/file_icons/copy_icon.png"), size=(20, 20)),
-            compound='left',
-            text="Copy",
-            width=30,
-            fg_color='transparent'
-        )
-        copy_button.pack(side='left', padx=5)
 
         combined_frame = CTkFrame(master=self)
         combined_frame.place(relx=0, rely=0.11, relwidth=1, relheight=0.89)
@@ -373,7 +357,7 @@ class FavoritesPage(ttk.Frame):
                 image=CTkImage(Image.open("../GUI/file_icons/star_icon_light.png"), size=(20, 20)))
             file_frame.check_favorite.set("on")
 
-    def folder_clicked(self, folder_name):
+    def folder_clicked(self, folder_name, ftype):
         print(f"Folder clicked: {folder_name}")
         # Delete all existing file frames
         for file_frame in self.file_frames:
@@ -383,17 +367,17 @@ class FavoritesPage(ttk.Frame):
         # Add folder button to the list of clicked folders
         folder_button = CTkButton(self.folder_frame, anchor='w', text=folder_name, fg_color='transparent',
                                   font=('Arial Bold', 20),
-                                  command=lambda: self.focus_on_folder(folder_name))
+                                  command=lambda: self.focus_on_folder(folder_name, ftype))
         folder_button.pack(side='left', anchor='w', pady=3)
         self.clicked_folders.append(folder_button)
         self.update_current_folder(folder_name)
 
         print(f"current folder: {self.current_folder}")
 
-        narf_thread = threading.Thread(target=self.handle_presenting_presaved_files, args=(self.get_current_folder(),))
+        narf_thread = threading.Thread(target=self.set_current_folder_child, args=(self.get_current_folder(), ftype))
         narf_thread.start()
 
-    def focus_on_folder(self, folder_name):
+    def focus_on_folder(self, folder_name, ftype):
         print(self.clicked_folders)
         for folder_button in self.clicked_folders:
             if folder_button.cget('text') == folder_name:
@@ -410,7 +394,7 @@ class FavoritesPage(ttk.Frame):
         self.update_current_folder(folder_name)
 
         # Retrieve files belonging to the clicked folder from your data source
-        narf_thread = threading.Thread(target=self.handle_presenting_presaved_files, args=(self.get_current_folder(),))
+        narf_thread = threading.Thread(target=self.set_current_folder_child, args=(self.get_current_folder(), ftype))
         narf_thread.start()
 
     def get_current_folder(self):
@@ -465,3 +449,9 @@ class FavoritesPage(ttk.Frame):
                 self.add_folder_frame(name.replace(" <folder>", ""), use_type, favorite)
             else:
                 self.add_file_frame(name.replace(" <folder>", ""), use_type, favorite)
+
+    def set_current_folder_child(self, folder_name, fype):
+        self.switch_current_folder(folder_name, fype)
+
+    def get_all_groups(self):
+        return self.client_communicator.get_all_groups()

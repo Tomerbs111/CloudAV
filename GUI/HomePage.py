@@ -252,26 +252,6 @@ class HomePage(ttk.Frame):
         )
         self.rename_button.pack(side='left', padx=5)
 
-        shared_button = CTkButton(
-            master=f_action,
-            image=CTkImage(Image.open("../GUI/file_icons/shared_icon.png"), size=(20, 20)),
-            compound='left',
-            text="Share",
-            width=30,
-            fg_color='transparent'
-        )
-        shared_button.pack(side='left', padx=5)
-
-        copy_button = CTkButton(
-            master=f_action,
-            image=CTkImage(Image.open("../GUI/file_icons/copy_icon.png"), size=(20, 20)),
-            compound='left',
-            text="Copy",
-            width=30,
-            fg_color='transparent'
-        )
-        copy_button.pack(side='left', padx=5)
-
         combined_frame = CTkFrame(master=self)
         combined_frame.place(relx=0, rely=0.11, relwidth=1, relheight=0.89)
 
