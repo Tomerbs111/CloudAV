@@ -252,26 +252,6 @@ class HomePage(ttk.Frame):
         )
         self.rename_button.pack(side='left', padx=5)
 
-        shared_button = CTkButton(
-            master=f_action,
-            image=CTkImage(Image.open("../GUI/file_icons/shared_icon.png"), size=(20, 20)),
-            compound='left',
-            text="Share",
-            width=30,
-            fg_color='transparent'
-        )
-        shared_button.pack(side='left', padx=5)
-
-        copy_button = CTkButton(
-            master=f_action,
-            image=CTkImage(Image.open("../GUI/file_icons/copy_icon.png"), size=(20, 20)),
-            compound='left',
-            text="Copy",
-            width=30,
-            fg_color='transparent'
-        )
-        copy_button.pack(side='left', padx=5)
-
         combined_frame = CTkFrame(master=self)
         combined_frame.place(relx=0, rely=0.11, relwidth=1, relheight=0.89)
 
@@ -366,14 +346,19 @@ class HomePage(ttk.Frame):
                                              args=(folder_name, folder_size, folder_date, folder_folder))
         add_folder_thread.start()
 
-        self.add_folder_frame(real_folder_name, str(folder_size) + " items", formatted_folder_date)
+        self.add_folder_frame(real_folder_name, str(folder_size) + " items", formatted_folder_date, 0)
 
-    def add_folder_frame(self, real_folder_name, folder_size, folder_date):
-        file_frame = FileFrame(self.f_file_list, real_folder_name, folder_size, folder_date, is_folder=True,
+    def add_folder_frame(self, real_folder_name, folder_size, folder_date, favorite):
+        file_frame = FileFrame(self.f_file_list, real_folder_name, folder_size, folder_date, favorite_callback=self.handle_favorite_toggle, is_folder=True,
                                click_callback=self.folder_clicked)
         file_frame.pack(expand=True, fill='x', side='top')
         self.file_frames.append(file_frame)
         self.file_frame_counter += 1
+
+        if favorite == 1:
+            file_frame.favorite_button.configure(
+                image=CTkImage(Image.open("../GUI/file_icons/star_icon_light.png"), size=(20, 20)))
+            file_frame.check_favorite.set("on")
 
     def folder_clicked(self, folder_name):
         print(f"Folder clicked: {folder_name}")
@@ -442,12 +427,13 @@ class HomePage(ttk.Frame):
             return
         for individual_file in narf_answer:
             (file_name, file_bytes, file_date, favorite, folder) = individual_file
+            print(f"file date{file_date}")
             if folder == self.get_current_folder():
                 formatted_file_date = self.set_date_format(file_date)
 
                 if " <folder>" in file_name:
                     formatted_file_size = str(file_bytes) + " items"
-                    self.add_folder_frame(file_name.replace(" <folder>", ""), formatted_file_size, formatted_file_date)
+                    self.add_folder_frame(file_name.replace(" <folder>", ""), formatted_file_size, formatted_file_date, favorite)
                 else:
                     formatted_file_size = self.set_size_format(file_bytes)
                     self.add_file_frame(file_name.replace(" <folder>", ""), formatted_file_size, formatted_file_date,
@@ -512,6 +498,8 @@ class HomePage(ttk.Frame):
 
     def handle_favorite_toggle(self, file_frame, new_value):
         file_name = file_frame.get_filename()
+        if file_frame.is_folder:
+            file_name = file_name + " <folder>"
         if new_value == "on":
             favorite_thread = threading.Thread(
                 target=self.client_communicator.handle_set_favorite_request_client,

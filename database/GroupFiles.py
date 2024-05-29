@@ -2,6 +2,8 @@ import pickle
 import sqlite3
 from datetime import datetime
 
+from database.FavoritesManager import FavoritesManager
+
 
 class GroupFiles:
     CREATE_TABLE_QUERY_FILES = '''
@@ -58,12 +60,21 @@ class GroupFiles:
         SELECT Name, FileBytes FROM GroupFiles WHERE GroupName = ? AND Folder = ?;
     '''
 
+    GET_FILE_DATE_QUERY = '''
+        SELECT Date FROM GroupFiles WHERE GroupName = ? AND Owner = ? AND Name = ?;    
+    '''
+
+    GET_FILE_SIZE_QUERY = '''
+        SELECT Size FROM GroupFiles WHERE GroupName = ? AND Owner = ? AND Name = ?;
+    '''
+
     def __init__(self, userid: str, database_path='../database/User_info.db'):
         self.conn = sqlite3.connect(database_path)
         self.cur = self.conn.cursor()
         self.owner_id = userid
         self.cur.execute(self.CREATE_TABLE_QUERY_FILES)
         self.conn.commit()
+        self.favorite_manager = FavoritesManager(userid)
 
     def _execute_query(self, query, params=None):
         if params:
@@ -82,8 +93,10 @@ class GroupFiles:
         formatted_files = []
         for file_info in all_files:
             owner, name, size, date_blob, group_name, folder = file_info
+            favorite = self.favorite_manager.get_favorite_status(file_info[1], group_name)
+            print(favorite)
             date = pickle.loads(date_blob)  # Deserialize bytes to datetime object
-            formatted_files.append((owner, name, size, date, group_name, folder))
+            formatted_files.append((owner, name, size, date, group_name, folder, favorite))
         return formatted_files
 
     def get_name_file_from_folder_group(self, group_name: str, folder_name: str):
@@ -103,8 +116,8 @@ class GroupFiles:
 
     def get_file_info(self, group_name: str, name: str, folder: str):
         result = self._execute_query(self.GET_FILE_INFO_QUERY, (group_name, self.owner_id, name, folder))
+        favorite = self.favorite_manager.get_favorite_status(name, group_name)
         if result:
-            # Assuming that result is a list containing a single tuple
             return result[0]  # Return the first tuple from the result list
         else:
             # Handle the case where no matching records are found
@@ -130,10 +143,24 @@ class GroupFiles:
             formatted_details[name] = filebytes
         return formatted_details if formatted_details else "<NO_DATA>"
 
+    def get_file_date(self, group_name: str, name: str):
+        date_tuple = self._execute_query(self.GET_FILE_DATE_QUERY, (group_name, self.owner_id, name))
+        if date_tuple:
+            actual_date = date_tuple[0][0]  # Extract the first element from the tuple
+            return actual_date
+        else:
+            raise ValueError("No date found for the given file name.")
+
+    def get_file_size(self, group_name: str, name: str):
+        size = self._execute_query(self.GET_FILE_SIZE_QUERY, (group_name, self.owner_id, name))
+        if size:
+            actual_size = size[0][0]  # Extract the first element from the tuple
+        return actual_size
+
     def close_connection(self):
         self.conn.close()
 
 
 if __name__ == '__main__':
-    asf = GroupFiles('tomerbs1810@gmail.com')
-    print(asf.get_file_info('counries', 'FFFFFFFF <folder>', 'counries'))
+    asf = GroupFiles('jasaxaf511@fincainc.com')
+    print(asf.get_file_size('daftpunk enjoyer', 'niggers.docx'))

@@ -10,7 +10,7 @@ from ttkbootstrap.toast import ToastNotification
 
 
 class GroupFileFrame(ttk.Frame):
-    def __init__(self, master, file_name, file_size, file_date, file_owner, is_folder=False, click_callback=None):
+    def __init__(self, master, file_name, file_size, file_date, file_owner, is_folder=False, click_callback=None, favorite_callback=None):
         super().__init__(master)
         self.file_name = file_name
         self.file_size = file_size
@@ -18,6 +18,7 @@ class GroupFileFrame(ttk.Frame):
         self.file_owner = file_owner
         self.is_folder = is_folder
         self.click_callback = click_callback  # Callback function for click event
+        self.favorite_callback = favorite_callback
 
         self.check_var = StringVar(value="off")
         self.mark_for_action = ttk.Checkbutton(self, text="",
@@ -64,6 +65,21 @@ class GroupFileFrame(ttk.Frame):
 
         text_size = 12
 
+        self.check_favorite = StringVar(value="off")
+
+        self.favorite_button = CTkButton(
+            master=self,
+            image=CTkImage(Image.open("../GUI/file_icons/star_icon.png"), size=(20, 20)),
+            compound='left',
+            text="",
+            width=30,
+            fg_color='transparent',
+            command=self.toggle_favorite  # Assign the command to the function
+        )
+
+        self.favorite_button.pack(side='right', padx=5, anchor='e')
+
+        # Create a label for the filename
         self.lu_filename = ttk.Label(
             master=self,
             text=self.file_name,
@@ -73,26 +89,43 @@ class GroupFileFrame(ttk.Frame):
         self.lu_filename.pack(side='left', padx=(0, 5), pady=5, anchor='w')
         self.lu_filename.bind("<Button-1>", self.on_click)  # Bind left mouse button click event
 
+        # Pack the size label with proper alignment
         self.lu_size = ttk.Label(
             master=self,
             text=self.file_size,
-            font=("Arial", 12)
+            font=("Arial", text_size)
         )
-        self.lu_size.pack(side='right', padx=(0, 27), pady=5, anchor='e')
+        self.lu_size.pack(side='right', padx=(0, 27), pady=5, anchor='e')  # Adjust padx as needed
 
+        # Pack the date label with proper alignment
         self.lu_date_mod = ttk.Label(
             master=self,
             text=self.file_date,
-            font=("Arial", 12)
+            font=("Arial", text_size)
         )
         self.lu_date_mod.pack(side='right', padx=(0, 65), pady=5, anchor='e')
 
+        # Pack the owner label with proper alignment
         self.lu_owner = ttk.Label(
             master=self,
             text=self.file_owner,
-            font=("Arial", 12)
+            font=("Arial", text_size)
         )
         self.lu_owner.pack(side='right', padx=(0, 65), pady=5, anchor='e')
+
+    def toggle_favorite(self):
+        current_value = self.check_favorite.get()
+        new_value = "on" if current_value == "off" else "off"
+        self.check_favorite.set(new_value)
+
+        # Change the button icon based on the new value
+        new_icon_path = "../GUI/file_icons/star_icon_light.png" if new_value == "on" else "../GUI/file_icons/star_icon.png"
+        new_icon = CTkImage(Image.open(new_icon_path), size=(20, 20))
+        self.favorite_button.configure(image=new_icon)
+
+        # Notify the callback when the favorite button is pressed
+        if self.favorite_callback:
+            self.favorite_callback(self, new_value)
 
     def on_click(self, event):
         if self.is_folder and self.click_callback:
@@ -151,6 +184,7 @@ class GroupFileFrame(ttk.Frame):
     def is_code(self, fname):
         code_extensions = ['.py', '.c', '.cpp', '.java', '.js', '.php', '.css', '.cs']
         return any(fname.lower().endswith(ext) for ext in code_extensions)
+
 
 
 class GroupsPage(ttk.Frame):
@@ -327,6 +361,21 @@ class GroupsPage(ttk.Frame):
 
         return short_file_date
 
+    def handle_favorite_toggle(self, file_frame, new_value):
+        file_name = file_frame.get_filename()
+        if file_frame.is_folder:
+            file_name = file_name + " <folder>"
+        if new_value == "on":
+            favorite_thread = threading.Thread(
+                target=self.group_communicator.handle_set_favorite_request_group,
+                args=(file_name, new_value, self.group_name))
+            favorite_thread.start()
+        else:
+            unfavorite_thread = threading.Thread(
+                target=self.group_communicator.handle_set_favorite_request_group,
+                args=(file_name, new_value, self.group_name))
+            unfavorite_thread.start()
+
     def set_frame_properties_for_display(self, file_name, file_bytes, file_uploadate: datetime):
         short_filename = os.path.basename(file_name)
 
@@ -348,15 +397,20 @@ class GroupsPage(ttk.Frame):
                                                  folder_name, folder_size, folder_date, folder_folder, self.group_name))
         add_folder_thread.start()
 
-        self.add_folder_frame(real_folder_name, folder_size, formatted_folder_date, self.owner)
+        self.add_folder_frame(real_folder_name, folder_size, formatted_folder_date, self.owner, 0)
 
-    def add_folder_frame(self, real_folder_name, folder_size, folder_date, group_folder_owner):
+    def add_folder_frame(self, real_folder_name, folder_size, folder_date, group_folder_owner, favorite):
         file_frame = GroupFileFrame(self.f_file_list, real_folder_name, folder_size, folder_date, group_folder_owner,
-                                    is_folder=True,
+                                    is_folder=True, favorite_callback=self.handle_favorite_toggle,
                                     click_callback=self.folder_clicked)
         file_frame.pack(expand=True, fill='x', side='top')
         self.group_file_frames.append(file_frame)
         self.file_frame_counter += 1
+
+        if favorite == 1:
+            file_frame.favorite_button.configure(
+                image=CTkImage(Image.open("../GUI/file_icons/star_icon_light.png"), size=(20, 20)))
+            file_frame.check_favorite.set("on")
 
     def folder_clicked(self, folder_name):
         print(f"Folder clicked: {folder_name}")
@@ -412,13 +466,18 @@ class GroupsPage(ttk.Frame):
 
         self.file_frame_counter = len(self.group_file_frames)
 
-    def add_file_frame(self, group_file_name, group_file_size, group_file_date, group_file_owner):
+    def add_file_frame(self, group_file_name, group_file_size, group_file_date, group_file_owner, favorite):
         file_frame = GroupFileFrame(self.f_file_list, group_file_name, group_file_size, group_file_date,
-                                    group_file_owner)
+                                    group_file_owner, favorite_callback=self.handle_favorite_toggle)
 
         file_frame.pack(expand=True, fill='x', side='top')
         self.group_file_frames.append(file_frame)
         self.file_frame_counter += 1
+
+        if favorite == 1:
+            file_frame.favorite_button.configure(
+                image=CTkImage(Image.open("../GUI/file_icons/star_icon_light.png"), size=(20, 20)))
+            file_frame.check_favorite.set("on")
 
     def get_file_name_to_rename(self, received_data):
         old_name, new_name, folder = received_data
@@ -432,15 +491,15 @@ class GroupsPage(ttk.Frame):
         if narf_answer == "<NO_DATA>":
             return
         for individual_file in narf_answer:
-            (owner, name, size, date, group_name, folder) = individual_file
+            owner, name, size, date, group_name, folder, favorite = individual_file
             if folder == self.current_folder:
                 formatted_file_date = self.set_date_format(date)
                 formatted_file_size = self.set_size_format(size)
             if " <folder>" in name:
                 formatted_file_size = str(size) + " items"
-                self.add_folder_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner)
+                self.add_folder_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner, favorite)
             else:
-                self.add_file_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner)
+                self.add_file_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner, favorite)
 
     def handle_send_file_request(self):
         if not self.can_upload() and self.is_admin is False:
@@ -470,7 +529,7 @@ class GroupsPage(ttk.Frame):
         )
         send_file_thread.start()
 
-        self.add_file_frame(short_filename, formatted_file_size, short_file_date, group_file_owner="self")
+        self.add_file_frame(short_filename, formatted_file_size, short_file_date, group_file_owner="self", favorite=0)
 
     import threading
 
@@ -598,9 +657,9 @@ class GroupsPage(ttk.Frame):
 
                 for item in received_data:
                     print(f"item: {item}")
-                    owner, name, size, date, group_name, folder = item
+                    owner, name, size, date, group_name, folder, favorite = item
                     self.add_file_frame(name, self.set_size_format(size), self.set_date_format(pickle.loads(date)),
-                                        owner)
+                                        owner, favorite)
             elif protocol_flag == "<NARF>":
                 self.handle_presenting_presaved_files(received_data)
 

@@ -74,6 +74,10 @@ class UserFiles:
         UPDATE Files SET Folder = ? WHERE Owner = ? AND Folder = ?;
     '''
 
+    GET_FILE_DATE_QUERY = '''
+        SELECT Date FROM Files WHERE Owner = ? AND Name = ?;
+    '''
+
     def __init__(self, userid: str, database_path='../database/User_info.db'):
         self.conn = sqlite3.connect(database_path)
         self.cur = self.conn.cursor()
@@ -123,7 +127,17 @@ class UserFiles:
 
     def get_file_size(self, file_name: str) -> int:
         size = self._execute_query(self.GET_FILE_SIZE_QUERY, (self.userid_db, file_name))
-        return size[0] if size else None
+        if size:
+            actual_size = size[0][0]  # Extract the first element from the tuple
+        return actual_size
+
+    def get_file_date(self, file_name: str) -> datetime:
+        date_tuple = self._execute_query(self.GET_FILE_DATE_QUERY, (self.userid_db, file_name))
+        if date_tuple:
+            actual_date = date_tuple[0][0]  # Extract the first element from the tuple
+            return actual_date
+        else:
+            return datetime.now()
 
     def get_favorite_status(self, file_name: str) -> int:
         status = self._execute_query(self.GET_FAVORITE_STATUS_QUERY, (self.userid_db, file_name))
@@ -162,4 +176,4 @@ class UserFiles:
 
 if __name__ == '__main__':
     db_manager = UserFiles('1')
-    print(db_manager.get_all_data_for_folder("Room"))
+    print(db_manager.get_file_date('Untitled.png'))

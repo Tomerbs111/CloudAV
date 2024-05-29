@@ -16,6 +16,7 @@ from database.AuthManager import AuthManager
 from database.GroupFiles import GroupFiles
 from database.UserFiles import UserFiles
 from database.RoomManager import RoomManager
+from database.FavoritesManager import FavoritesManager
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
@@ -220,6 +221,7 @@ class Server:
     def handle_requests(self, client_socket, identifier, aes_key):
         try:
             user_files_manager = UserFiles(identifier)
+            favorite_manager = FavoritesManager(AuthManager().get_email(identifier))
 
             while True:
                 action = None
@@ -227,7 +229,8 @@ class Server:
 
                 if received_data.get("FLAG") == "<NARF>":
                     narf_data = received_data.get("DATA")
-                    self.handle_presaved_files_action(client_socket, user_files_manager, narf_data, aes_key)
+                    self.handle_presaved_files_action(client_socket, user_files_manager, favorite_manager, narf_data,
+                                                      aes_key)
 
                 elif received_data.get("FLAG") == "<CREATE_FOLDER>":
                     create_folder_data = received_data.get("DATA")
@@ -256,11 +259,12 @@ class Server:
 
                 elif received_data.get("FLAG") == "<FAVORITE>":
                     favorite_data = received_data.get("DATA")
-                    self.handle_favorite_file_action(client_socket, user_files_manager, favorite_data)
+                    self.handle_favorite_file_action(client_socket, user_files_manager, favorite_manager, favorite_data)
 
                 elif received_data.get("FLAG") == "<UNFAVORITE>":
                     unfavorite_data = received_data.get("DATA")
-                    self.handle_unfavorite_file_action(client_socket, user_files_manager, unfavorite_data)
+                    self.handle_unfavorite_file_action(client_socket, user_files_manager, favorite_manager,
+                                                       unfavorite_data)
 
                 elif received_data.get("FLAG") == "<GET_USERS>":
                     self.handle_get_users_action(client_socket, identifier, aes_key)
@@ -271,6 +275,9 @@ class Server:
 
                 elif received_data.get("FLAG") == "<GET_ROOMS>":
                     self.handle_get_rooms_action(client_socket, identifier, aes_key)
+
+                elif received_data.get("FLAG") == "<GET_FAVORITES>":
+                    self.handle_get_all_favorites_action(client_socket, favorite_manager, aes_key)
 
                 elif received_data.get("FLAG") == "<JOIN_GROUP>":
                     join_group_data = received_data.get("DATA")
@@ -289,13 +296,15 @@ class Server:
     def handle_group_requests(self, client_socket: socket, identifier, aes_key):
         try:
             group_manager = GroupFiles(AuthManager().get_email(identifier))
+            favorite_manager = FavoritesManager(AuthManager().get_email(identifier))
 
             while True:
                 received_data = pickle.loads(self.recv_data(client_socket, aes_key))
 
                 if received_data.get("FLAG") == "<NARF>":
                     narf_data = received_data.get("DATA")
-                    self.handle_presaved_files_action(client_socket, group_manager, narf_data, aes_key)
+                    self.handle_presaved_files_action(client_socket, group_manager, favorite_manager, narf_data,
+                                                      aes_key)
 
                 elif received_data.get("FLAG") == "<CREATE_FOLDER_GROUP>":
                     create_folder_data = received_data.get("DATA")
@@ -317,6 +326,14 @@ class Server:
                     rename_data = received_data.get("DATA")
                     type_of_rename = received_data.get("TYPE")
                     self.handle_rename_file_action(client_socket, group_manager, rename_data, type_of_rename)
+
+                elif received_data.get("FLAG") == "<FAVORITE>":
+                    favorite_data = received_data.get("DATA")
+                    self.handle_favorite_file_action(client_socket, group_manager, favorite_manager, favorite_data)
+
+                elif received_data.get("FLAG") == "<UNFAVORITE>":
+                    unfavorite_data = received_data.get("DATA")
+                    self.handle_unfavorite_file_action(client_socket, group_manager, favorite_manager, unfavorite_data)
 
                 elif received_data.get("FLAG") == "<GET_USERS>":
                     self.handle_get_users_action(client_socket, identifier, aes_key)
@@ -344,7 +361,7 @@ class Server:
             print(f"Error in handle_group_requests: {e}")
             client_socket.close()
 
-    def handle_presaved_files_action(self, client_socket, db_manager, folder_name, aes_key):
+    def handle_presaved_files_action(self, client_socket, db_manager, favorite_manager, folder_name, aes_key):
         print(folder_name)
         saved_file_prop_lst = []
         if isinstance(db_manager, GroupFiles):
@@ -432,9 +449,8 @@ class Server:
 
     def handle_delete_file_action(self, client_socket, db_manager, delete_data):
         try:
-
-            folder_names_lst = delete_data[0]
-            file_names_lst = delete_data[1]
+            file_names_lst = delete_data[0]
+            folder_names_lst = delete_data[1]
             current_folder = delete_data[2]
 
             if isinstance(db_manager, GroupFiles):
@@ -519,22 +535,50 @@ class Server:
                 db_manager.rename_folder_files(old_name.replace(" <folder>", ""), new_name.replace(" <folder>", ""))
             print("Folder renamed successfully.")
 
-    def handle_favorite_file_action(self, client_socket, user_files_manager, favorite_file_name):
-        try:
-            user_files_manager.set_favorite_status(favorite_file_name, 1)
-            print("File favorited successfully.")
-        except Exception as e:
-            print(f"Error in handle_favorite_action: {e}")
-            client_socket.close()
+    def handle_favorite_file_action(self, client_socket, db_manager, favorite_manager, favorite_data):
+        favorite_file_name = favorite_data[0]
+        favorite_file_type = favorite_data[1]
 
-    def handle_unfavorite_file_action(self, client_socket, user_files_manager, unfavorite_file_name):
-        try:
-            user_files_manager.set_unfavorite_status(unfavorite_file_name)
-            print("File unfavorited successfully.")
+        favorite_manager.set_favorite_status(favorite_file_name, favorite_file_type, 1)
 
-        except Exception as e:
-            print(f"Error in handle_unfavorite_action: {e}")
-            client_socket.close()
+        if isinstance(db_manager, UserFiles):
+            db_manager.set_favorite_status(favorite_file_name, 1)
+            if favorite_manager.get_favorite_status(favorite_file_name, 'personal') is None:
+                favorite_manager.insert_favorite(favorite_file_name, 'personal', 1)
+
+        elif isinstance(db_manager, GroupFiles):
+            group_name = self.get_group_name(client_socket)
+            if favorite_manager.get_favorite_status(favorite_file_name, group_name) is None:
+                favorite_manager.insert_favorite(favorite_file_name, group_name, 1)
+        else:
+            print("Unknown database manager type.")
+
+    def handle_unfavorite_file_action(self, client_socket, db_manager, favorite_manager, favorite_data):
+        unfavorite_file_name = favorite_data[0]
+        unfavorite_file_type = favorite_data[1]
+
+        favorite_manager.set_favorite_status(unfavorite_file_name, unfavorite_file_type, 0)
+
+
+        if isinstance(db_manager, UserFiles):
+            db_manager.set_favorite_status(unfavorite_file_name, 0)
+            if favorite_manager.get_favorite_status(unfavorite_file_name, 'personal') is None:
+                favorite_manager.insert_favorite(unfavorite_file_name, 'personal', 0)
+
+
+        elif isinstance(db_manager, GroupFiles):
+            group_name = self.get_group_name(client_socket)
+            if favorite_manager.get_favorite_status(unfavorite_file_name, group_name) is None:
+                favorite_manager.insert_favorite(unfavorite_file_name, group_name, 0)
+        else:
+            print("Unknown database manager type.")
+
+    def handle_get_all_favorites_action(self, client_socket, favorite_manager, aes_key):
+        all_favorites = favorite_manager.get_all_favorites()
+
+        data_to_send = {"FLAG": "<GET_ALL_FAVORITES>", "DATA": all_favorites}
+        self.send_data(client_socket, pickle.dumps(data_to_send), aes_key)
+        print(f"Sent all favorites to the client.")
 
     def handle_get_users_action(self, client_socket, identifier, aes_key):
         all_users = AuthManager().get_all_users(identifier)

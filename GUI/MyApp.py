@@ -7,6 +7,7 @@ import tkinter as tk
 from GUI.RegistrationApp import RegistrationApp
 from GUI.GroupsPage import GroupsPage
 from GUI.HomePage import HomePage
+from GUI.FavoritesPage import FavoritesPage
 
 
 class Page(ttk.Frame):
@@ -102,30 +103,12 @@ class Page(ttk.Frame):
 
         CTkButton(
             self.f_options,
-            text="Shared",
-            image=CTkImage(Image.open("../GUI/file_icons/shared_icon.png"), size=(20, 20)),
-            compound='left',
-            anchor='w',
-            fg_color='transparent'
-        ).pack(side='top', pady=5, anchor='w', fill='x', padx=10)
-
-        CTkButton(
-            self.f_options,
             text="Favorites",
             image=CTkImage(Image.open("../GUI/file_icons/star_icon.png"), size=(20, 20)),
             compound='left',
+            command=self.switch_to_favorites_page,
             anchor='w',
             fg_color='transparent'
-        ).pack(side='top', pady=5, anchor='w', fill='x', padx=10)
-
-        CTkButton(
-            self.f_options,
-            text="Recycle bin",
-            image=CTkImage(Image.open("../GUI/file_icons/trash_icon.png"), size=(20, 20)),
-            compound='left',
-            anchor='w',
-            fg_color='transparent'
-
         ).pack(side='top', pady=5, anchor='w', fill='x', padx=10)
 
         CTkButton(
@@ -254,6 +237,14 @@ class Page(ttk.Frame):
             print("Switching to home page")
             self.switch_frame("HomePage", self.communicator)
 
+    def switch_to_favorites_page(self):
+        self.user_username, self.user_email = self.get_user_info()
+        if self.current_frame.__class__.__name__ == "GroupsPage":
+            threading.Thread(target=self.current_frame.group_communicator.handle_leave_group_request).start()
+        if self.current_frame.__class__.__name__ != "FavoritesPage":
+            print("Switching to favorites page")
+            self.switch_frame("FavoritesPage", self.communicator, self.set_current_folder_child)
+
     def setup_new_folder_dialog(self):
         self.add_folder_dialog = CTkToplevel(self)
         self.add_folder_dialog.geometry("300x160")
@@ -287,6 +278,20 @@ class Page(ttk.Frame):
         self.communicator.log_out()
         self.pack_forget()
         self.switch_frame("RegistrationApp", self.communicator)
+
+    def set_current_folder_child(self, folder_name, ftype):
+        if ftype == "personal":
+            self.switch_to_home_page()
+            self.current_frame.folder_clicked(folder_name)
+        else:
+            new_room_dictionary = self.current_frame.get_all_groups()
+            for room, permissions in new_room_dictionary.items():
+                if room == ftype:
+                    self.switch_to_groups_page(ftype, permissions[0], permissions[1])
+                    break
+            self.current_frame.folder_clicked(folder_name)
+
+
 
     def handle_add_new_folder_request(self):
         folder_name = self.folder_name_entry.get().strip()
@@ -565,3 +570,21 @@ class MyApp(ttk.Window):
 
         elif frame_class == "Logout":
             self.destroy()
+
+        elif frame_class == "FavoritesPage":
+            new_frame = FavoritesPage(self.page.f_current_page, self.switch_frame, self.client_communicator
+                                      , self.group_communicator, switch_current_folder=args[1])
+
+            if self.current_frame:
+                self.current_frame.pack_forget()
+
+            self.page.pack(fill="both", expand=True)
+            new_frame.pack(fill="both", expand=True)
+
+            self.page.current_frame = new_frame
+            self.current_frame = new_frame
+
+            if not self.loaded:
+                self.page.after(500, self.page.get_group_names)
+                self.loaded = True
+
