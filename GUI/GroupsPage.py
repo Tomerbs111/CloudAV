@@ -449,7 +449,7 @@ class GroupsPage(ttk.Frame):
         self.update_current_folder(folder_name)
 
         # run handle_presaved_files_group, answer will be picked by handle_broadcast_requests
-        self.group_communicator.handle_presaved_files_group(folder_name)
+        self.group_communicator.handle_presaved_files_group(self.get_current_folder())
 
     def get_checked_file_frames(self):
         checked_file_frames_list = []
@@ -656,14 +656,15 @@ class GroupsPage(ttk.Frame):
 
             protocol_flag = data.get("FLAG")
             received_data = data.get("DATA")
+            current_folder = data.get("CURRENT_FOLDER")
 
             if protocol_flag == "<SEND>":
-
                 for item in received_data:
                     print(f"item: {item}")
                     owner, name, size, date, group_name, folder, favorite = item
                     self.add_file_frame(name, self.set_size_format(size), self.set_date_format(pickle.loads(date)),
                                         owner, favorite)
+
             elif protocol_flag == "<NARF>":
                 self.handle_presenting_presaved_files(received_data)
 
