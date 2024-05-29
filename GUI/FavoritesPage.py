@@ -175,11 +175,14 @@ class FileFrame(ttk.Frame):
 class FavoritesPage(ttk.Frame):
     customtkinter.set_appearance_mode("dark")
 
-    def __init__(self, parent, switch_frame, client_communicator, switch_current_folder):
+    def __init__(self, parent, switch_frame, client_communicator, group_communicator, switch_current_folder):
         super().__init__(parent)
         self.parent_app = parent
         self.switch_frame = switch_frame
         self.client_communicator = client_communicator
+        self.group_communicator = group_communicator
+
+        print(self.group_communicator)
 
         self.f_file_list = None
         self.file_frames = []
@@ -392,18 +395,32 @@ class FavoritesPage(ttk.Frame):
 
     def handle_favorite_toggle(self, file_frame, new_value):
         file_name = file_frame.get_filename()
+        file_type = file_frame.get_ftype()
+        print(f"file type: {file_type}")
         if file_frame.is_folder:
             file_name = file_name + " <folder>"
         if new_value == "on":
-            favorite_thread = threading.Thread(
-                target=self.client_communicator.handle_set_favorite_request_client,
-                args=(file_name, new_value))
-            favorite_thread.start()
+            if file_type != "personal":
+                favorite_thread = threading.Thread(
+                    target=self.group_communicator.handle_set_favorite_request_group,
+                    args=(file_name, new_value, file_type))
+                favorite_thread.start()
+            else:
+                favorite_thread = threading.Thread(
+                    target=self.client_communicator.handle_set_favorite_request_client,
+                    args=(file_name, new_value))
+                favorite_thread.start()
         else:
-            unfavorite_thread = threading.Thread(
-                target=self.client_communicator.handle_set_favorite_request_client,
-                args=(file_name, new_value))
-            unfavorite_thread.start()
+            if file_type != "personal":
+                favorite_thread = threading.Thread(
+                    target=self.group_communicator.handle_set_favorite_request_group,
+                    args=(file_name, new_value, file_type))
+                favorite_thread.start()
+            else:
+                favorite_thread = threading.Thread(
+                    target=self.client_communicator.handle_set_favorite_request_client,
+                    args=(file_name, new_value))
+                favorite_thread.start()
 
     def handle_presenting_presaved_files(self, current_folder):
         narf_answer = self.client_communicator.get_all_favorites()

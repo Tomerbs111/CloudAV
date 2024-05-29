@@ -139,13 +139,13 @@ class ClientCommunication:
 
     def handle_set_favorite_request_client(self, file_name, switch_value):
         if switch_value == "on":
-            data_dict_on = {"FLAG": '<FAVORITE>', "DATA": file_name}
+            data_dict_on = {"FLAG": '<FAVORITE>', "DATA": [file_name, 'personal']}
             self.send_data(self.client_socket, pickle.dumps(data_dict_on))
 
             print(f"File '{file_name}' favorited.")
 
         elif switch_value == "off":
-            data_dict_off = {"FLAG": '<UNFAVORITE>', "DATA": file_name}
+            data_dict_off = {"FLAG": '<UNFAVORITE>', "DATA": [file_name, 'personal']}
             self.send_data(self.client_socket, pickle.dumps(data_dict_off))
 
             print(f"File '{file_name}' unfavorited.")
@@ -304,15 +304,15 @@ class GroupCommunication:
         except Exception as e:
             print(f"Error in receive_checked_files: {e}")
 
-    def handle_set_favorite_request_group(self, file_name, switch_value):
+    def handle_set_favorite_request_group(self, file_name, switch_value, ftype):
         if switch_value == "on":
-            data_dict_on = {"FLAG": '<FAVORITE>', "DATA": file_name}
+            data_dict_on = {"FLAG": '<FAVORITE>', "DATA": [file_name, ftype]}
             self.send_data(self.client_socket, pickle.dumps(data_dict_on))
 
             print(f"File '{file_name}' favorited.")
 
         elif switch_value == "off":
-            data_dict_off = {"FLAG": '<UNFAVORITE>', "DATA": file_name}
+            data_dict_off = {"FLAG": '<UNFAVORITE>', "DATA": [file_name, ftype]}
             self.send_data(self.client_socket, pickle.dumps(data_dict_off))
 
             print(f"File '{file_name}' unfavorited.")

@@ -572,7 +572,8 @@ class MyApp(ttk.Window):
             self.destroy()
 
         elif frame_class == "FavoritesPage":
-            new_frame = FavoritesPage(self.page.f_current_page, self.switch_frame, self.client_communicator, switch_current_folder=args[1])
+            new_frame = FavoritesPage(self.page.f_current_page, self.switch_frame, self.client_communicator
+                                      , self.group_communicator, switch_current_folder=args[1])
 
             if self.current_frame:
                 self.current_frame.pack_forget()

@@ -368,12 +368,12 @@ class GroupsPage(ttk.Frame):
         if new_value == "on":
             favorite_thread = threading.Thread(
                 target=self.group_communicator.handle_set_favorite_request_group,
-                args=(file_name, new_value))
+                args=(file_name, new_value, self.group_name))
             favorite_thread.start()
         else:
             unfavorite_thread = threading.Thread(
                 target=self.group_communicator.handle_set_favorite_request_group,
-                args=(file_name, new_value))
+                args=(file_name, new_value, self.group_name))
             unfavorite_thread.start()
 
     def set_frame_properties_for_display(self, file_name, file_bytes, file_uploadate: datetime):
