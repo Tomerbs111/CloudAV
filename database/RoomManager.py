@@ -93,3 +93,8 @@ class RoomManager:
     def get_room_permissions(self, room_name):
         result = self._execute_query(self.GET_ROOM_PERMISSIONS_QUERY, (room_name,))
         return [row[0] for row in result]
+
+
+if __name__ == '__main__':
+    rm = RoomManager()
+    print(rm.get_rooms_by_participant('jasaxaf511@fincainc.com'))

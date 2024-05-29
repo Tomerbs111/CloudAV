@@ -10,7 +10,7 @@ from datetime import datetime
 import datetime
 
 
-class FileFrame(ttk.Frame):
+class FavoritesFileFrame(ttk.Frame):
     def __init__(self, master, fname, ftype, favorite_callback=None, is_folder=False, click_callback=None):
         super().__init__(master)
         self.fname = fname
@@ -218,7 +218,7 @@ class FavoritesPage(ttk.Frame):
         f_action = ttk.Frame(master=self)
 
         combined_frame = CTkFrame(master=self)
-        combined_frame.place(relx=0, rely=0.06, relwidth=1, relheight=0.89)
+        combined_frame.place(relx=0, rely=0.06, relwidth=1, relheight=0.99)
 
         f_file_properties = CTkFrame(master=combined_frame, fg_color='transparent')
         f_file_properties.place(relx=0, rely=0, relwidth=1, relheight=0.08)
@@ -230,7 +230,7 @@ class FavoritesPage(ttk.Frame):
         ttk.Separator(combined_frame, orient="horizontal").place(relx=0, rely=0.08, relwidth=1)
 
         self.f_file_list = CTkScrollableFrame(master=combined_frame, fg_color='transparent')
-        self.f_file_list.place(relx=0, rely=0.09, relwidth=1, relheight=0.91)
+        self.f_file_list.place(relx=0, rely=0.09, relwidth=1, relheight=0.86)
 
     def handle_duplicate_names(self, given_name):
         # Extract existing names from file frames
@@ -314,9 +314,9 @@ class FavoritesPage(ttk.Frame):
         self.add_folder_frame(real_folder_name, "Folder", 0)
 
     def add_folder_frame(self, real_folder_name, use_type, favorite):
-        file_frame = FileFrame(self.f_file_list, real_folder_name, use_type,
-                               favorite_callback=self.handle_favorite_toggle, is_folder=True,
-                               click_callback=self.folder_clicked)
+        file_frame = FavoritesFileFrame(self.f_file_list, real_folder_name, use_type,
+                                        favorite_callback=self.handle_favorite_toggle, is_folder=True,
+                                        click_callback=self.folder_clicked)
         file_frame.pack(expand=True, fill='x', side='top')
         self.file_frames.append(file_frame)
         self.file_frame_counter += 1
@@ -382,8 +382,8 @@ class FavoritesPage(ttk.Frame):
         return checked_file_frames_list
 
     def add_file_frame(self, file_name, use_type, favorite):
-        file_frame = FileFrame(self.f_file_list, file_name, use_type,
-                               favorite_callback=self.handle_favorite_toggle)
+        file_frame = FavoritesFileFrame(self.f_file_list, file_name, use_type,
+                                        favorite_callback=self.handle_favorite_toggle)
         file_frame.pack(expand=True, fill='x', side='top')
         self.file_frames.append(file_frame)
         self.file_frame_counter += 1

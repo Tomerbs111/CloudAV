@@ -184,6 +184,14 @@ class ClientCommunication:
         self.send_data(self.client_socket, pickle.dumps(data_dict))
         print("Logged out successfully.")
 
+    def handle_search_request(self, search_query):
+        data_dict = {"FLAG": "<SEARCH>", "DATA": search_query}
+        self.send_data(self.client_socket, pickle.dumps(data_dict))
+
+        received_data = pickle.loads(self.recv_data(self.client_socket))
+        search_results = received_data.get("DATA")
+        return search_results
+
 
 
 class GroupCommunication:
@@ -359,6 +367,9 @@ class GroupCommunication:
         except Exception as e:
             print(f"Error while logging out: {e}")
 
+    def handle_search_request(self, search_query):
+        data_dict = {"FLAG": "<SEARCH>", "DATA": search_query}
+        self.send_data(self.client_socket, pickle.dumps(data_dict))
 
 # ------------Client setup------------
 HOST = '127.0.0.1'  # '192.168.1.152'

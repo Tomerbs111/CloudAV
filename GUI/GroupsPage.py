@@ -10,7 +10,8 @@ from ttkbootstrap.toast import ToastNotification
 
 
 class GroupFileFrame(ttk.Frame):
-    def __init__(self, master, file_name, file_size, file_date, file_owner, is_folder=False, click_callback=None, favorite_callback=None):
+    def __init__(self, master, file_name, file_size, file_date, file_owner, is_folder=False, click_callback=None,
+                 favorite_callback=None):
         super().__init__(master)
         self.file_name = file_name
         self.file_size = file_size
@@ -186,7 +187,6 @@ class GroupFileFrame(ttk.Frame):
         return any(fname.lower().endswith(ext) for ext in code_extensions)
 
 
-
 class GroupsPage(ttk.Frame):
     def __init__(self, parent, switch_frame, group_communicator, group_name, permissions, admin):
         super().__init__(parent)
@@ -217,8 +217,10 @@ class GroupsPage(ttk.Frame):
 
         self.users_data = None
         self.room_data = None
+        self.search_data = None
         self.room_data_event = threading.Event()
         self.users_data_event = threading.Event()
+        self.search_data_event = threading.Event()
 
     def set_permissions(self, permissions):
         if type(permissions) == list:
@@ -497,9 +499,11 @@ class GroupsPage(ttk.Frame):
                 formatted_file_size = self.set_size_format(size)
             if " <folder>" in name:
                 formatted_file_size = str(size) + " items"
-                self.add_folder_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner, favorite)
+                self.add_folder_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner,
+                                      favorite)
             else:
-                self.add_file_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner, favorite)
+                self.add_file_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner,
+                                    favorite)
 
     def handle_send_file_request(self):
         if not self.can_upload() and self.is_admin is False:
@@ -686,6 +690,10 @@ class GroupsPage(ttk.Frame):
 
                 self.room_data_event.set()
 
+            elif protocol_flag == '<SEARCH_RESULTS>':
+                self.search_data = received_data
+                self.display_search_results(self.search_data)
+
         except pickle.UnpicklingError:
             return
 
@@ -801,3 +809,24 @@ class GroupsPage(ttk.Frame):
         zip_file_path = os.path.join(self.save_path, zip_file_name)
         with open(zip_file_path, 'wb') as zip_file:
             zip_file.write(zip_data)
+
+    def perform_search(self, search_query):
+        threading.Thread(target=self.group_communicator.handle_search_request, args=(search_query,)).start()
+
+
+    def display_search_results(self, search_results):
+        for file_frame in self.group_file_frames:
+            file_frame.destroy()
+
+        for result in search_results:
+            owner, fname, fsize, fdate, folder, favorite = result
+            formatted_file_size = self.set_size_format(fsize)
+            formatted_file_date = self.set_date_format(fdate)
+
+            if " <folder>" in fname:
+                formatted_file_size = str(fsize) + " items"
+                self.add_folder_frame(fname.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner,
+                                      favorite)
+            else:
+                self.add_file_frame(fname.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner,
+                                    favorite)

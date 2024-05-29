@@ -78,6 +78,11 @@ class UserFiles:
         SELECT Date FROM Files WHERE Owner = ? AND Name = ?;
     '''
 
+    SEARCH_FILES_QUERY = '''
+               SELECT Name, Size, Date, Folder, Favorite FROM Files
+               WHERE Name LIKE ? AND Owner = ?;
+           '''
+
     def __init__(self, userid: str, database_path='../database/User_info.db'):
         self.conn = sqlite3.connect(database_path)
         self.cur = self.conn.cursor()
@@ -169,6 +174,19 @@ class UserFiles:
             name, filebytes = detail
             formatted_details[name] = filebytes
         return formatted_details if formatted_details else "<NO_DATA>"
+
+    def search_files(self, keyword: str):
+        search_keyword = f'%{keyword}%'
+
+        results = self._execute_query(self.SEARCH_FILES_QUERY, (search_keyword, self.userid_db))
+        formatted_results = []
+        for result in results:
+            name, size, date_blob, folder, favorite = result
+            date = pickle.loads(date_blob)  # Deserialize bytes to datetime object
+            # Change the order of fields in the tuple
+            formatted_results.append(('personal', name, size, date, folder, favorite))
+
+        return formatted_results
 
     def close_connection(self):
         self.conn.close()

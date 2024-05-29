@@ -288,6 +288,10 @@ class Server:
                     self.handle_logout_action(client_socket, aes_key)
                     break
 
+                elif received_data.get("FLAG") == "<SEARCH>":
+                    search_data = received_data.get("DATA")
+                    self.handle_personal_search_action(client_socket, user_files_manager, identifier, search_data, aes_key)
+
 
         except (socket.error, IOError) as e:
             print(f"Error in handle_requests: {e}")
@@ -357,9 +361,53 @@ class Server:
                     self.handle_logout_action(client_socket, aes_key)
                     break
 
+                elif received_data.get("FLAG") == "<SEARCH>":
+                    search_data = received_data.get("DATA")
+                    self.handle_group_search_action(client_socket, group_manager, identifier, search_data, aes_key, favorite_manager)
+
+
         except (socket.error, IOError) as e:
             print(f"Error in handle_group_requests: {e}")
             client_socket.close()
+
+    def handle_personal_search_action(self, client_socket, user_files_manager, identifier, search_data, aes_key):
+        print("in personal search")
+        # Perform search on user files
+        user_results = user_files_manager.search_files(search_data)
+
+        # Initialize results as an empty list if they are None
+        if user_results is None:
+            user_results = []
+
+        # Send the search results back to the client
+        response_data = {
+            "FLAG": "<SEARCH_RESULTS>",
+            "DATA": user_results
+        }
+        print(response_data)
+        self.send_data(client_socket, pickle.dumps(response_data), aes_key)
+
+    def handle_group_search_action(self, client_socket, group_manager, identifier, search_data, aes_key, favorite_manager):
+        print("in group search")
+        user_email = AuthManager().get_email(identifier)
+        room_manager = RoomManager()
+
+        room_lst = room_manager.get_rooms_by_participant(user_email)
+
+        # Perform search on group files
+        group_results = group_manager.search_files(search_data, favorite_manager, room_lst)
+
+        # Initialize results as an empty list if they are None
+        if group_results is None:
+            group_results = []
+
+        # Send the search results back to the client
+        response_data = {
+            "FLAG": "<SEARCH_RESULTS>",
+            "DATA": group_results
+        }
+        print(response_data)
+        self.send_data(client_socket, pickle.dumps(response_data), aes_key)
 
     def handle_presaved_files_action(self, client_socket, db_manager, favorite_manager, folder_name, aes_key):
         print(folder_name)
