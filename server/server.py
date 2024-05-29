@@ -405,7 +405,7 @@ class Server:
         response_data = {
             "FLAG": "<SEARCH_RESULTS>",
             "DATA": group_results,
-            "CURRENT_FOLDER": self.get_group_name(client_socket)
+            "CURRENT_FOLDER": search_data
         }
         print(response_data)
         self.send_data(client_socket, pickle.dumps(response_data), aes_key)

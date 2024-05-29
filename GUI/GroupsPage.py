@@ -812,6 +812,7 @@ class GroupsPage(ttk.Frame):
             zip_file.write(zip_data)
 
     def perform_search(self, search_query):
+        self.current_folder = search_query
         threading.Thread(target=self.group_communicator.handle_search_request, args=(search_query,)).start()
 
 

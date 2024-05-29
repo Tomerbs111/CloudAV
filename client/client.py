@@ -371,6 +371,7 @@ class GroupCommunication:
             print(f"Error while logging out: {e}")
 
     def handle_search_request(self, search_query):
+        self.current_folder = search_query
         data_dict = {"FLAG": "<SEARCH>", "DATA": search_query}
         self.send_data(self.client_socket, pickle.dumps(data_dict))
 
