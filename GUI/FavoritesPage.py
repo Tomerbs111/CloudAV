@@ -209,10 +209,18 @@ class FavoritesPage(ttk.Frame):
 
         self.home_folder_button = CTkButton(self.folder_frame, text="Favorites", font=('Arial Bold', 20),
                                             fg_color='transparent', anchor='w',
-                                            command=lambda: self.focus_on_folder("Home"))
+                                            command=lambda: self.go_home())
         self.home_folder_button.pack(side='left', anchor='w', pady=3)
 
         self.clicked_folders.append(self.home_folder_button)
+
+    def go_home(self):
+        for frame in self.file_frames:
+            frame.destroy()
+
+        narf_thread = threading.Thread(target=self.handle_presenting_presaved_files, args=(self.get_current_folder(),))
+        narf_thread.start()
+
 
     def setup_file_actions_frame(self):
         f_action = ttk.Frame(master=self)
@@ -438,3 +446,20 @@ class FavoritesPage(ttk.Frame):
 
     def get_all_groups(self):
         return self.client_communicator.get_all_groups()
+
+    def perform_search(self, search_query):
+        search_results = self.client_communicator.search_from_favorites(search_query)
+        self.display_search_results(search_results)
+
+    def display_search_results(self, search_results):
+        for file_frame in self.file_frames:
+            file_frame.destroy()
+
+        for result in search_results:
+            fname, ftype, favorite = result
+
+            if " <folder>" in fname:
+                self.add_folder_frame(fname.replace(" <folder>", ""), ftype, favorite)
+
+            else:
+                self.add_file_frame(fname.replace(" <folder>", ""), ftype, favorite)

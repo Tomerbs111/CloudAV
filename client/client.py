@@ -192,6 +192,15 @@ class ClientCommunication:
         search_results = received_data.get("DATA")
         return search_results
 
+    def search_from_favorites(self, search_query):
+        data_dict = {"FLAG": "<SEARCH_FAVORITES>", "DATA": search_query}
+        self.send_data(self.client_socket, pickle.dumps(data_dict))
+
+        received_data = pickle.loads(self.recv_data(self.client_socket))
+        if received_data.get("FLAG") == "<SEARCH_FAVORITES>":
+            search_results = received_data.get("DATA")
+            return search_results
+
 
 
 class GroupCommunication:

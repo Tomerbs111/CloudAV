@@ -34,7 +34,7 @@ class FavoritesManager:
     '''
 
     SEARCH_FAVORITES_QUERY = '''
-            SELECT Owner, Name, Type, Favorite FROM Favorites WHERE Owner = ? AND Name LIKE ? AND Favorite = 1;
+            SELECT Name, Type, Favorite FROM Favorites WHERE Owner = ? AND Name LIKE ? AND Favorite = 1;
         '''
 
     def __init__(self, userid: str, database_path='../database/User_info.db'):

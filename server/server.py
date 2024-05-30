@@ -292,6 +292,11 @@ class Server:
                     search_data = received_data.get("DATA")
                     self.handle_personal_search_action(client_socket, user_files_manager, identifier, search_data, aes_key)
 
+                elif received_data.get("FLAG") == "<SEARCH_FAVORITES>":
+                    search_data = received_data.get("DATA")
+                    self.handle_search_favorites_action(client_socket, favorite_manager, search_data, aes_key)
+
+
 
         except (socket.error, IOError) as e:
             print(f"Error in handle_requests: {e}")
@@ -409,6 +414,24 @@ class Server:
         }
         print(response_data)
         self.send_data(client_socket, pickle.dumps(response_data), aes_key)
+
+    def handle_search_favorites_action(self, client_socket, favorite_manager, search_data, aes_key):
+        print("in search favorites")
+
+        favorite_results = favorite_manager.search_favorites(search_data)
+
+        # Initialize results as an empty list if they are None
+        if favorite_results is None:
+            favorite_results = []
+        # Send the search results back to the client
+        response_data = {
+            "FLAG": "<SEARCH_FAVORITES>",
+            "DATA": favorite_results
+        }
+        print(response_data)
+        self.send_data(client_socket, pickle.dumps(response_data), aes_key)
+
+        print("out of search favorites")
 
     def handle_presaved_files_action(self, client_socket, db_manager, favorite_manager, folder_name, aes_key):
         print(folder_name)
