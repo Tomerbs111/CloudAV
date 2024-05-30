@@ -194,7 +194,7 @@ class Page(ttk.Frame):
             anchor='w',
             image=CTkImage(Image.open("../GUI/file_icons/refresh_icon.png"), size=(20, 20)),
             width=18,
-            command=self.get_group_names
+            command=lambda: threading.Thread(target=self.get_group_names).start()
         )
 
         # Grid buttons in the same row
