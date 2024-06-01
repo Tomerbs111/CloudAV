@@ -810,4 +810,5 @@ class GroupsPage(ttk.Frame):
         formatted_date = self.set_date_format(pickle.loads(date))
         formatted_file_size = self.set_size_format(size)
         formatted_file_size = str(size) + " items"
-        self.add_folder_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_date, owner, 0)
+        if folder == self.get_current_folder():
+            self.add_folder_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_date, owner, 0)
