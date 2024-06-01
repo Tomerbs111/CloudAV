@@ -205,12 +205,13 @@ class Server:
         try:
             while True:
                 queued_data = self.file_queue.get()
-                sender_socket, file_data = queued_data
+                sender_socket, file_data, group_name = queued_data
 
                 for g_users in self.clients_list:
                     try:
                         if g_users.user_socket != sender_socket:
-                            self.send_data(g_users.user_socket, pickle.dumps(file_data), g_users.aes_key)
+                            if g_users.group_name == group_name:
+                                self.send_data(g_users.user_socket, pickle.dumps(file_data), g_users.aes_key)
 
                     except Exception as e:
                         print(f"Error in broadcast_files: {e}")
@@ -393,7 +394,7 @@ class Server:
             folder_info = db_manager.get_file_info(group_name, folder_name, folder_folder)
             queued_info = {"FLAG": "<CREATE_FOLDER>", "DATA": folder_info}
 
-            self.file_queue.put((client_socket, queued_info))
+            self.file_queue.put((client_socket, queued_info, group_name))
 
     def handle_send_file_action(self, client_socket, db_manager, all_file_content):
         try:
@@ -412,7 +413,7 @@ class Server:
                     print(f"File info: {file_info}")
                     queued_info = {"FLAG": "<SEND>", "DATA": [file_info]}
 
-                    self.file_queue.put((client_socket, queued_info))
+                    self.file_queue.put((client_socket, queued_info, group_name))
 
             elif isinstance(db_manager, UserFiles):
                 db_manager.insert_file(file_name, file_size, file_date, file_bytes, file_folder)
@@ -453,16 +454,17 @@ class Server:
             file_names_lst = delete_data[0]
             folder_names_lst = delete_data[1]
             current_folder = delete_data[2]
+            group_name = self.get_group_name(client_socket)
 
             if isinstance(db_manager, GroupFiles):
                 for individual_file in file_names_lst:
                     db_manager.delete_file(self.get_group_name(client_socket), individual_file, current_folder)
                     queued_info = {"FLAG": "<DELETE>", "DATA": individual_file}
-                    self.file_queue.put((client_socket, queued_info))
+                    self.file_queue.put((client_socket, queued_info, group_name))
 
                 for individual_folder in folder_names_lst:
                     queued_info = {"FLAG": "<DELETE>", "DATA": individual_folder}
-                    self.file_queue.put((client_socket, queued_info))
+                    self.file_queue.put((client_socket, queued_info, group_name))
 
                     def delete_folder_recursive(current_folder, folder_name):
                         all_files = db_manager.get_name_file_from_folder_group(self.get_group_name(client_socket),
@@ -515,7 +517,7 @@ class Server:
                 db_manager.rename_file(group_name, old_name, new_name, file_folder)
 
                 queued_info = {"FLAG": "<RENAME>", "DATA": rename_data}
-                self.file_queue.put((client_socket, queued_info))
+                self.file_queue.put((client_socket, queued_info, group_name))
 
             if isinstance(db_manager, UserFiles):
                 db_manager.rename_file(old_name, new_name, file_folder)
@@ -529,7 +531,7 @@ class Server:
                                                new_name.replace(" <folder>", ""))
 
                 queued_info = {"FLAG": "<RENAME>", "DATA": rename_data}
-                self.file_queue.put((client_socket, queued_info))
+                self.file_queue.put((client_socket, queued_info, group_name))
 
             if isinstance(db_manager, UserFiles):
                 db_manager.rename_file(old_name, new_name, file_folder)
