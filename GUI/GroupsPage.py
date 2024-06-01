@@ -680,6 +680,9 @@ class GroupsPage(ttk.Frame):
             elif protocol_flag == "<RECV_FOLDER>":
                 self.handle_save_folder(received_data)
 
+            elif protocol_flag == "<CREATE_FOLDER>":
+                self.create_new_folder(received_data)
+
 
             elif protocol_flag == "<GET_ROOMS>":
                 self.room_data = received_data
@@ -801,3 +804,9 @@ class GroupsPage(ttk.Frame):
         zip_file_path = os.path.join(self.save_path, zip_file_name)
         with open(zip_file_path, 'wb') as zip_file:
             zip_file.write(zip_data)
+
+    def create_new_folder(self, recived_data):
+        owner, name, size, date, groupName, folder = recived_data
+        formatted_date = self.set_date_format(date)
+        formatted_size = self.set_size_format(size)
+        self.add_folder_frame(name, formatted_size, formatted_date, owner, 0)

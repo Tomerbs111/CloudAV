@@ -391,7 +391,7 @@ class Server:
             group_name = create_folder_data[4]
             db_manager.insert_file(folder_name, folder_size, folder_date, group_name, folder_folder, folder_bytes)
             folder_info = db_manager.get_file_info(group_name, folder_name, folder_folder)
-            queued_info = {"FLAG": "<SEND>", "DATA": [folder_info]}
+            queued_info = {"FLAG": "<CREATE_FOLDER>", "DATA": folder_info}
 
             self.file_queue.put((client_socket, queued_info))
 
