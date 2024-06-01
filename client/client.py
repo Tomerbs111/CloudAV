@@ -185,7 +185,6 @@ class ClientCommunication:
         print("Logged out successfully.")
 
 
-
 class GroupCommunication:
     def __init__(self, client_socket: socket, handle_broadcast_requests, aes_key):
         """
@@ -492,7 +491,7 @@ class GroupCommunication:
 
 
 # ------------Client setup------------
-HOST = '127.0.0.1'  # '192.168.1.152'
+HOST = '127.0.0.1' #'192.168.1.201'
 PORT = 40301
 
 

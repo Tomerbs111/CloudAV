@@ -97,7 +97,7 @@ class GroupFiles:
             print(favorite)
             date = pickle.loads(date_blob)  # Deserialize bytes to datetime object
             formatted_files.append((owner, name, size, date, group_name, folder, favorite))
-        return formatted_files
+        return formatted_files if formatted_files else "<NO_DATA>"
 
     def get_name_file_from_folder_group(self, group_name: str, folder_name: str):
         names = self._execute_query(self.GET_NAMES_FROM_GROUP_QUERY, (group_name, folder_name))
