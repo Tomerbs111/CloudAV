@@ -525,7 +525,7 @@ class GroupsPage(ttk.Frame):
 
         send_file_thread = threading.Thread(
             target=self.group_communicator.handle_send_file_request,
-            args=(file_name, short_filename, file_date, file_bytes, self.get_current_folder())
+            args=(file_name, short_filename, file_date, file_bytes, self.get_current_folder(), True)
         )
         send_file_thread.start()
 
@@ -654,7 +654,6 @@ class GroupsPage(ttk.Frame):
             received_data = data.get("DATA")
 
             if protocol_flag == "<SEND>":
-
                 for item in received_data:
                     print(f"item: {item}")
                     owner, name, size, date, group_name, folder, favorite = item
@@ -756,7 +755,7 @@ class GroupsPage(ttk.Frame):
                         # Upload file to the database
                         send_file_thread = threading.Thread(
                             target=self.group_communicator.handle_send_file_request,
-                            args=(path, short_filename, file_date, file_bytes, file_folder)
+                            args=(path, short_filename, file_date, file_bytes, file_folder, False)
                         )
                         send_file_thread.start()
 

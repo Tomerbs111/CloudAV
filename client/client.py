@@ -338,7 +338,7 @@ class GroupCommunication:
 
         print(f"Folder '{real_folder_name}' created successfully")
 
-    def handle_send_file_request(self, file_name, short_filename, short_file_date, file_size, file_folder):
+    def handle_send_file_request(self, file_name, short_filename, short_file_date, file_size, file_folder, is_broadcast = False):
         """
         Handle sending a file request by reading the file content, creating a data dictionary,
         and sending the data over a client socket using pickle.
@@ -361,11 +361,12 @@ class GroupCommunication:
                     break
                 file_content += data
 
-        all_file_content = [short_filename, file_size, short_file_date, file_content, file_folder]
+        all_file_content = [short_filename, file_size, short_file_date, file_content, file_folder, is_broadcast]
         data_dict = {"FLAG": '<SEND>', "DATA": all_file_content}
 
         self.send_data(self.client_socket, pickle.dumps(data_dict))
         print(f"File '{file_name}' sent successfully")
+
 
     def handle_download_request_group(self, select_file_names_lst, save_path, file_folder):
         """

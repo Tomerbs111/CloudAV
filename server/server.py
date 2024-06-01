@@ -402,16 +402,17 @@ class Server:
             file_date = all_file_content[2]
             file_bytes = all_file_content[3]
             file_folder = all_file_content[4]
+            is_broadcast = all_file_content[5]
 
             if isinstance(db_manager, GroupFiles):
                 group_name = self.get_group_name(client_socket)
                 db_manager.insert_file(file_name, file_size, file_date, group_name, file_folder, file_bytes)
+                if is_broadcast:
+                    file_info = self.get_file_info(db_manager, group_name, file_name, file_folder)
+                    print(f"File info: {file_info}")
+                    queued_info = {"FLAG": "<SEND>", "DATA": [file_info]}
 
-                file_info = self.get_file_info(db_manager, group_name, file_name, file_folder)
-                print(f"File info: {file_info}")
-                queued_info = {"FLAG": "<SEND>", "DATA": [file_info]}
-
-                self.file_queue.put((client_socket, queued_info))
+                    self.file_queue.put((client_socket, queued_info))
 
             elif isinstance(db_manager, UserFiles):
                 db_manager.insert_file(file_name, file_size, file_date, file_bytes, file_folder)
