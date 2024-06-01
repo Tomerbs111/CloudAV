@@ -481,7 +481,6 @@ class Server:
                     delete_folder_recursive(current_folder, individual_folder.replace(" <folder>", ""))
                     db_manager.delete_file(self.get_group_name(client_socket), individual_folder, current_folder)
 
-
             elif isinstance(db_manager, UserFiles):
                 for individual_file in file_names_lst:
                     db_manager.delete_file(individual_file, current_folder)
@@ -496,6 +495,8 @@ class Server:
                             if " <folder>" in files_in_folder:
                                 delete_folder_recursive(folder_name, files_in_folder.replace(" <folder>", ""))
                             db_manager.delete_file(files_in_folder, folder_name)
+
+                        db_manager.delete_folder(folder_name)
 
                     delete_folder_recursive(current_folder, individual_folder.replace(" <folder>", ""))
                     db_manager.delete_file(individual_folder, current_folder)
