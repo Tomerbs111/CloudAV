@@ -289,6 +289,15 @@ class Server:
                     self.handle_logout_action(client_socket, aes_key)
                     break
 
+                elif received_data.get("FLAG") == "<SEARCH>":
+                    search_data = received_data.get("DATA")
+                    self.handle_personal_search_action(client_socket, user_files_manager, identifier, search_data, aes_key)
+
+                elif received_data.get("FLAG") == "<SEARCH_FAVORITES>":
+                    search_data = received_data.get("DATA")
+                    self.handle_search_favorites_action(client_socket, favorite_manager, search_data, aes_key)
+
+
 
         except (socket.error, IOError) as e:
             print(f"Error in handle_requests: {e}")
@@ -358,9 +367,72 @@ class Server:
                     self.handle_logout_action(client_socket, aes_key)
                     break
 
+                elif received_data.get("FLAG") == "<SEARCH>":
+                    search_data = received_data.get("DATA")
+                    self.handle_group_search_action(client_socket, group_manager, identifier, search_data, aes_key, favorite_manager)
+
+
         except (socket.error, IOError) as e:
             print(f"Error in handle_group_requests: {e}")
             client_socket.close()
+
+    def handle_personal_search_action(self, client_socket, user_files_manager, identifier, search_data, aes_key):
+        print("in personal search")
+        # Perform search on user files
+        user_results = user_files_manager.search_files(search_data)
+
+        # Initialize results as an empty list if they are None
+        if user_results is None:
+            user_results = []
+
+        # Send the search results back to the client
+        response_data = {
+            "FLAG": "<SEARCH_RESULTS>",
+            "DATA": user_results
+        }
+        print(response_data)
+        self.send_data(client_socket, pickle.dumps(response_data), aes_key)
+
+    def handle_group_search_action(self, client_socket, group_manager, identifier, search_data, aes_key, favorite_manager):
+        print("in group search")
+        user_email = AuthManager().get_email(identifier)
+        room_manager = RoomManager()
+
+        room_lst = room_manager.get_rooms_by_participant(user_email)
+
+        # Perform search on group files
+        group_results = group_manager.search_files(search_data, favorite_manager, room_lst)
+
+        # Initialize results as an empty list if they are None
+        if group_results is None:
+            group_results = []
+
+        # Send the search results back to the client
+        response_data = {
+            "FLAG": "<SEARCH_RESULTS>",
+            "DATA": group_results,
+            "CURRENT_FOLDER": search_data
+        }
+        print(response_data)
+        self.send_data(client_socket, pickle.dumps(response_data), aes_key)
+
+    def handle_search_favorites_action(self, client_socket, favorite_manager, search_data, aes_key):
+        print("in search favorites")
+
+        favorite_results = favorite_manager.search_favorites(search_data)
+
+        # Initialize results as an empty list if they are None
+        if favorite_results is None:
+            favorite_results = []
+        # Send the search results back to the client
+        response_data = {
+            "FLAG": "<SEARCH_FAVORITES>",
+            "DATA": favorite_results
+        }
+        print(response_data)
+        self.send_data(client_socket, pickle.dumps(response_data), aes_key)
+
+        print("out of search favorites")
 
     def handle_presaved_files_action(self, client_socket, db_manager, favorite_manager, folder_name, aes_key):
         print(folder_name)
@@ -373,7 +445,7 @@ class Server:
         elif isinstance(db_manager, UserFiles):
             saved_file_prop_lst = db_manager.get_all_data(folder_name)
 
-        data_to_send = {"FLAG": "<NARF>", "DATA": saved_file_prop_lst}
+        data_to_send = {"FLAG": "<NARF>", "DATA": saved_file_prop_lst, "CURRENT_FOLDER": folder_name}
 
         self.send_data(client_socket, pickle.dumps(data_to_send), aes_key)
 
@@ -392,7 +464,7 @@ class Server:
             group_name = create_folder_data[4]
             db_manager.insert_file(folder_name, folder_size, folder_date, group_name, folder_folder, folder_bytes)
             folder_info = db_manager.get_file_info(group_name, folder_name, folder_folder)
-            queued_info = {"FLAG": "<CREATE_FOLDER>", "DATA": folder_info}
+            queued_info = {"FLAG": "<SEND>", "DATA": [folder_info], "CURRENT_FOLDER": folder_folder}
 
             self.file_queue.put((client_socket, queued_info, group_name))
 
@@ -411,9 +483,9 @@ class Server:
                 if is_broadcast:
                     file_info = self.get_file_info(db_manager, group_name, file_name, file_folder)
                     print(f"File info: {file_info}")
-                    queued_info = {"FLAG": "<SEND>", "DATA": [file_info]}
+                    queued_info = {"FLAG": "<SEND>", "DATA": [file_info], "CURRENT_FOLDER": file_folder}
 
-                    self.file_queue.put((client_socket, queued_info, group_name))
+                self.file_queue.put((client_socket, queued_info))
 
             elif isinstance(db_manager, UserFiles):
                 db_manager.insert_file(file_name, file_size, file_date, file_bytes, file_folder)
@@ -454,16 +526,15 @@ class Server:
             file_names_lst = delete_data[0]
             folder_names_lst = delete_data[1]
             current_folder = delete_data[2]
-            group_name = self.get_group_name(client_socket)
 
             if isinstance(db_manager, GroupFiles):
                 for individual_file in file_names_lst:
                     db_manager.delete_file(self.get_group_name(client_socket), individual_file, current_folder)
-                    queued_info = {"FLAG": "<DELETE>", "DATA": individual_file}
+                    queued_info = {"FLAG": "<DELETE>", "DATA": individual_file, "CURRENT_FOLDER": current_folder}
                     self.file_queue.put((client_socket, queued_info, group_name))
 
                 for individual_folder in folder_names_lst:
-                    queued_info = {"FLAG": "<DELETE>", "DATA": individual_folder}
+                    queued_info = {"FLAG": "<DELETE>", "DATA": individual_folder, "CURRENT_FOLDER": current_folder }
                     self.file_queue.put((client_socket, queued_info, group_name))
 
                     def delete_folder_recursive(current_folder, folder_name):
@@ -480,6 +551,7 @@ class Server:
 
                     delete_folder_recursive(current_folder, individual_folder.replace(" <folder>", ""))
                     db_manager.delete_file(self.get_group_name(client_socket), individual_folder, current_folder)
+
 
             elif isinstance(db_manager, UserFiles):
                 for individual_file in file_names_lst:
@@ -517,7 +589,7 @@ class Server:
                 group_name = self.get_group_name(client_socket)
                 db_manager.rename_file(group_name, old_name, new_name, file_folder)
 
-                queued_info = {"FLAG": "<RENAME>", "DATA": rename_data}
+                queued_info = {"FLAG": "<RENAME>", "DATA": rename_data, "CURRENT_FOLDER": file_folder}
                 self.file_queue.put((client_socket, queued_info, group_name))
 
             if isinstance(db_manager, UserFiles):
@@ -531,7 +603,7 @@ class Server:
                 db_manager.rename_folder_files(group_name, old_name.replace(" <folder>", ""),
                                                new_name.replace(" <folder>", ""))
 
-                queued_info = {"FLAG": "<RENAME>", "DATA": rename_data}
+                queued_info = {"FLAG": "<RENAME>", "DATA": rename_data, "CURRENT_FOLDER": file_folder}
                 self.file_queue.put((client_socket, queued_info, group_name))
 
             if isinstance(db_manager, UserFiles):

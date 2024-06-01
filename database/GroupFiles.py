@@ -68,6 +68,11 @@ class GroupFiles:
         SELECT Size FROM GroupFiles WHERE GroupName = ? AND Owner = ? AND Name = ?;
     '''
 
+    SEARCH_FILES_QUERY = '''
+                SELECT Owner, Name, Size, Date, GroupName, Folder FROM GroupFiles
+                WHERE Name LIKE ? AND GroupName = ?;
+            '''
+
     def __init__(self, userid: str, database_path='../database/User_info.db'):
         self.conn = sqlite3.connect(database_path)
         self.cur = self.conn.cursor()
@@ -156,6 +161,19 @@ class GroupFiles:
         if size:
             actual_size = size[0][0]  # Extract the first element from the tuple
         return actual_size
+
+    def search_files(self, keyword: str, favorite_manager, room_lst: list):
+        formatted_results = []
+        for room in room_lst:
+            search_keyword = f'%{keyword}%'
+            results = self._execute_query(self.SEARCH_FILES_QUERY, (search_keyword, room,))
+            for result in results:
+                owner, name, size, date_blob, group_name, folder = result
+                favorite = favorite_manager.get_favorite_status(name, group_name)
+                date = pickle.loads(date_blob)  # Deserialize bytes to datetime object
+                formatted_results.append((folder, name, size, date, folder, favorite))
+
+        return formatted_results
 
     def close_connection(self):
         self.conn.close()

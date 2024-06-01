@@ -666,3 +666,24 @@ class HomePage(ttk.Frame):
 
     def get_all_groups(self):
         return self.client_communicator.get_all_groups()
+
+    def perform_search(self, search_query):
+        search_results = self.client_communicator.handle_search_request(search_query)
+        self.display_search_results(search_results)
+
+    def display_search_results(self, search_results):
+        for file_frame in self.file_frames:
+            file_frame.destroy()
+
+        for result in search_results:
+            owner, fname, fsize, fdate, folder, favorite = result
+            formatted_file_size = self.set_size_format(fsize)
+            formatted_file_date = self.set_date_format(fdate)
+
+            if " <folder>" in fname:
+                formatted_file_size = str(fsize) + " items"
+                self.add_folder_frame(fname.replace(" <folder>", ""), formatted_file_size, formatted_file_date,
+                                      favorite)
+            else:
+                self.add_file_frame(fname.replace(" <folder>", ""), formatted_file_size, formatted_file_date,
+                                    favorite)

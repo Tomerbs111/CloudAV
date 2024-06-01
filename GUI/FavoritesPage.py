@@ -10,7 +10,7 @@ from datetime import datetime
 import datetime
 
 
-class FileFrame(ttk.Frame):
+class FavoritesFileFrame(ttk.Frame):
     def __init__(self, master, fname, ftype, favorite_callback=None, is_folder=False, click_callback=None):
         super().__init__(master)
         self.fname = fname
@@ -209,16 +209,24 @@ class FavoritesPage(ttk.Frame):
 
         self.home_folder_button = CTkButton(self.folder_frame, text="Favorites", font=('Arial Bold', 20),
                                             fg_color='transparent', anchor='w',
-                                            command=lambda: self.focus_on_folder("Home"))
+                                            command=lambda: self.go_home())
         self.home_folder_button.pack(side='left', anchor='w', pady=3)
 
         self.clicked_folders.append(self.home_folder_button)
+
+    def go_home(self):
+        for frame in self.file_frames:
+            frame.destroy()
+
+        narf_thread = threading.Thread(target=self.handle_presenting_presaved_files, args=(self.get_current_folder(),))
+        narf_thread.start()
+
 
     def setup_file_actions_frame(self):
         f_action = ttk.Frame(master=self)
 
         combined_frame = CTkFrame(master=self)
-        combined_frame.place(relx=0, rely=0.06, relwidth=1, relheight=0.89)
+        combined_frame.place(relx=0, rely=0.06, relwidth=1, relheight=0.99)
 
         f_file_properties = CTkFrame(master=combined_frame, fg_color='transparent')
         f_file_properties.place(relx=0, rely=0, relwidth=1, relheight=0.08)
@@ -230,7 +238,7 @@ class FavoritesPage(ttk.Frame):
         ttk.Separator(combined_frame, orient="horizontal").place(relx=0, rely=0.08, relwidth=1)
 
         self.f_file_list = CTkScrollableFrame(master=combined_frame, fg_color='transparent')
-        self.f_file_list.place(relx=0, rely=0.09, relwidth=1, relheight=0.91)
+        self.f_file_list.place(relx=0, rely=0.09, relwidth=1, relheight=0.86)
 
     def handle_duplicate_names(self, given_name):
         # Extract existing names from file frames
@@ -314,9 +322,9 @@ class FavoritesPage(ttk.Frame):
         self.add_folder_frame(real_folder_name, "Folder", 0)
 
     def add_folder_frame(self, real_folder_name, use_type, favorite):
-        file_frame = FileFrame(self.f_file_list, real_folder_name, use_type,
-                               favorite_callback=self.handle_favorite_toggle, is_folder=True,
-                               click_callback=self.folder_clicked)
+        file_frame = FavoritesFileFrame(self.f_file_list, real_folder_name, use_type,
+                                        favorite_callback=self.handle_favorite_toggle, is_folder=True,
+                                        click_callback=self.folder_clicked)
         file_frame.pack(expand=True, fill='x', side='top')
         self.file_frames.append(file_frame)
         self.file_frame_counter += 1
@@ -382,8 +390,8 @@ class FavoritesPage(ttk.Frame):
         return checked_file_frames_list
 
     def add_file_frame(self, file_name, use_type, favorite):
-        file_frame = FileFrame(self.f_file_list, file_name, use_type,
-                               favorite_callback=self.handle_favorite_toggle)
+        file_frame = FavoritesFileFrame(self.f_file_list, file_name, use_type,
+                                        favorite_callback=self.handle_favorite_toggle)
         file_frame.pack(expand=True, fill='x', side='top')
         self.file_frames.append(file_frame)
         self.file_frame_counter += 1
@@ -438,3 +446,20 @@ class FavoritesPage(ttk.Frame):
 
     def get_all_groups(self):
         return self.client_communicator.get_all_groups()
+
+    def perform_search(self, search_query):
+        search_results = self.client_communicator.search_from_favorites(search_query)
+        self.display_search_results(search_results)
+
+    def display_search_results(self, search_results):
+        for file_frame in self.file_frames:
+            file_frame.destroy()
+
+        for result in search_results:
+            fname, ftype, favorite = result
+
+            if " <folder>" in fname:
+                self.add_folder_frame(fname.replace(" <folder>", ""), ftype, favorite)
+
+            else:
+                self.add_file_frame(fname.replace(" <folder>", ""), ftype, favorite)

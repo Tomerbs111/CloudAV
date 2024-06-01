@@ -1,5 +1,6 @@
 import sqlite3
 
+
 class FavoritesManager:
     CREATE_TABLE_QUERY_FAVORITES = '''
         CREATE TABLE IF NOT EXISTS Favorites (
@@ -31,6 +32,10 @@ class FavoritesManager:
     GET_FAVORITES_STATUS_FROM_TYPE_QUERY = '''
         SELECT Owner, Name, Type, Favorite FROM Favorites WHERE Owner = ? AND Favorite = 1;
     '''
+
+    SEARCH_FAVORITES_QUERY = '''
+            SELECT Name, Type, Favorite FROM Favorites WHERE Owner = ? AND Name LIKE ? AND Favorite = 1;
+        '''
 
     def __init__(self, userid: str, database_path='../database/User_info.db'):
         self.conn = sqlite3.connect(database_path)
@@ -68,9 +73,15 @@ class FavoritesManager:
         query_results = self._execute_query(self.GET_FAVORITES_STATUS_FROM_TYPE_QUERY, (self.userid,))
         return query_results
 
+    def search_favorites(self, keyword: str) -> list:
+        search_keyword = f'%{keyword}%'
+        results = self._execute_query(self.SEARCH_FAVORITES_QUERY, (self.userid, search_keyword))
+        return results
+
     def close_connection(self):
         self.conn.close()
 
+
 if __name__ == '__main__':
     test = FavoritesManager('jasaxaf511@fincainc.com')
-    print(test.get_favorite_status('Brain fart meme (slowed).mp4', 'daftpunk enjoyer'))
+    print(test.search_favorites("b"))

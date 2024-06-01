@@ -10,7 +10,8 @@ from ttkbootstrap.toast import ToastNotification
 
 
 class GroupFileFrame(ttk.Frame):
-    def __init__(self, master, file_name, file_size, file_date, file_owner, is_folder=False, click_callback=None, favorite_callback=None):
+    def __init__(self, master, file_name, file_size, file_date, file_owner, is_folder=False, click_callback=None,
+                 favorite_callback=None):
         super().__init__(master)
         self.file_name = file_name
         self.file_size = file_size
@@ -186,7 +187,6 @@ class GroupFileFrame(ttk.Frame):
         return any(fname.lower().endswith(ext) for ext in code_extensions)
 
 
-
 class GroupsPage(ttk.Frame):
     def __init__(self, parent, switch_frame, group_communicator, group_name, permissions, admin):
         super().__init__(parent)
@@ -217,8 +217,10 @@ class GroupsPage(ttk.Frame):
 
         self.users_data = None
         self.room_data = None
+        self.search_data = None
         self.room_data_event = threading.Event()
         self.users_data_event = threading.Event()
+        self.search_data_event = threading.Event()
 
     def set_permissions(self, permissions):
         if type(permissions) == list:
@@ -447,7 +449,7 @@ class GroupsPage(ttk.Frame):
         self.update_current_folder(folder_name)
 
         # run handle_presaved_files_group, answer will be picked by handle_broadcast_requests
-        self.group_communicator.handle_presaved_files_group(folder_name)
+        self.group_communicator.handle_presaved_files_group(self.get_current_folder())
 
     def get_checked_file_frames(self):
         checked_file_frames_list = []
@@ -497,9 +499,11 @@ class GroupsPage(ttk.Frame):
                 formatted_file_size = self.set_size_format(size)
             if " <folder>" in name:
                 formatted_file_size = str(size) + " items"
-                self.add_folder_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner, favorite)
+                self.add_folder_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner,
+                                      favorite)
             else:
-                self.add_file_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner, favorite)
+                self.add_file_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner,
+                                    favorite)
 
     def handle_send_file_request(self):
         if not self.can_upload() and self.is_admin is False:
@@ -652,6 +656,7 @@ class GroupsPage(ttk.Frame):
 
             protocol_flag = data.get("FLAG")
             received_data = data.get("DATA")
+            current_folder = data.get("CURRENT_FOLDER")
 
             if protocol_flag == "<SEND>":
                 for item in received_data:
@@ -659,6 +664,7 @@ class GroupsPage(ttk.Frame):
                     owner, name, size, date, group_name, folder, favorite = item
                     self.add_file_frame(name, self.set_size_format(size), self.set_date_format(pickle.loads(date)),
                                         owner, favorite)
+
             elif protocol_flag == "<NARF>":
                 self.handle_presenting_presaved_files(received_data)
 
@@ -687,6 +693,10 @@ class GroupsPage(ttk.Frame):
                 self.room_data = received_data
 
                 self.room_data_event.set()
+
+            elif protocol_flag == '<SEARCH_RESULTS>':
+                self.search_data = received_data
+                self.display_search_results(self.search_data)
 
         except pickle.UnpicklingError:
             return
@@ -755,7 +765,7 @@ class GroupsPage(ttk.Frame):
                         # Upload file to the database
                         send_file_thread = threading.Thread(
                             target=self.group_communicator.handle_send_file_request,
-                            args=(path, short_filename, file_date, file_bytes, file_folder, False)
+                            args=(path, short_filename, file_date, file_bytes, file_folder)
                         )
                         send_file_thread.start()
 
@@ -804,6 +814,27 @@ class GroupsPage(ttk.Frame):
         with open(zip_file_path, 'wb') as zip_file:
             zip_file.write(zip_data)
 
+    def perform_search(self, search_query):
+        self.current_folder = search_query
+        threading.Thread(target=self.group_communicator.handle_search_request, args=(search_query,)).start()
+
+
+    def display_search_results(self, search_results):
+        for file_frame in self.group_file_frames:
+            file_frame.destroy()
+
+        for result in search_results:
+            owner, fname, fsize, fdate, folder, favorite = result
+            formatted_file_size = self.set_size_format(fsize)
+            formatted_file_date = self.set_date_format(fdate)
+
+            if " <folder>" in fname:
+                formatted_file_size = str(fsize) + " items"
+                self.add_folder_frame(fname.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner,
+                                      favorite)
+            else:
+                self.add_file_frame(fname.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner,
+                                    favorite)
     def create_new_folder(self, recived_data):
         owner, name, size, date, groupName, folder = recived_data
         formatted_date = self.set_date_format(pickle.loads(date))

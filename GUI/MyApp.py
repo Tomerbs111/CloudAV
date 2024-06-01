@@ -20,6 +20,7 @@ class Page(ttk.Frame):
         self.f_options = None
         self.current_frame = None
         self.group_menu_frame = None
+        self.search_entry = None
         self.master = master
         self.switch_frame = switch_frame
         self.communicator = communicator
@@ -45,19 +46,25 @@ class Page(ttk.Frame):
         f_searchbar = ttk.Frame(master=self.f_data_center, style="dark")
         f_searchbar.pack(side="top", fill="both")
 
-        search_button = ttk.Button(f_searchbar, text="Search")
+        search_button = ttk.Button(f_searchbar, text="Search", command=self.perform_search)
         search_button.pack(side="left", pady=15)
 
-        search_entry = ttk.Entry(f_searchbar, width=70)
-        search_entry.pack(side="left", pady=15)
+        self.search_entry = ttk.Entry(f_searchbar, width=70)
+        self.search_entry.pack(side="left", pady=15)
 
         # Profile Photo Placeholder on the Right
         profile_photo_placeholder = ttk.Label(f_searchbar, text="👤", font=("Arial", 30))
-        profile_photo_placeholder.pack(side="right", padx=10, pady=15)
+        profile_photo_placeholder.pack(side="right", padx=20, pady=15)
 
-        # Settings Button on the Right
-        settings_button = ttk.Button(f_searchbar, text="Settings")
-        settings_button.pack(side="right", padx=10, pady=15)
+    def perform_search(self):
+        search_query = self.search_entry.get()
+        if search_query == "":
+            return
+        self.current_frame.perform_search(search_query)
+        self.search_entry.delete(0, 'end')
+
+    def display_search_results(self, search_results):
+        self.current_frame.display_search_results(search_results)
 
     def setup_data_center_frame(self):
         # Code for setting up the Data center frame
@@ -211,7 +218,6 @@ class Page(ttk.Frame):
 
         ttk.Separator(self.f_options, orient="horizontal").pack(side='top', fill='x', pady=5, padx=10)
 
-
     def switch_to_groups_page(self, group_name, permissions, room_admin):
         self.user_username, self.user_email = self.get_user_info()
         if self.current_frame.__class__.__name__ != "GroupsPage":
@@ -290,8 +296,6 @@ class Page(ttk.Frame):
                     self.switch_to_groups_page(ftype, permissions[0], permissions[1])
                     break
             self.current_frame.folder_clicked(folder_name)
-
-
 
     def handle_add_new_folder_request(self):
         folder_name = self.folder_name_entry.get().strip()
@@ -587,4 +591,3 @@ class MyApp(ttk.Window):
             if not self.loaded:
                 self.page.after(500, self.page.get_group_names)
                 self.loaded = True
-

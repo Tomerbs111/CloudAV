@@ -184,6 +184,23 @@ class ClientCommunication:
         self.send_data(self.client_socket, pickle.dumps(data_dict))
         print("Logged out successfully.")
 
+    def handle_search_request(self, search_query):
+        data_dict = {"FLAG": "<SEARCH>", "DATA": search_query}
+        self.send_data(self.client_socket, pickle.dumps(data_dict))
+
+        received_data = pickle.loads(self.recv_data(self.client_socket))
+        search_results = received_data.get("DATA")
+        return search_results
+
+    def search_from_favorites(self, search_query):
+        data_dict = {"FLAG": "<SEARCH_FAVORITES>", "DATA": search_query}
+        self.send_data(self.client_socket, pickle.dumps(data_dict))
+
+        received_data = pickle.loads(self.recv_data(self.client_socket))
+        if received_data.get("FLAG") == "<SEARCH_FAVORITES>":
+            search_results = received_data.get("DATA")
+            return search_results
+
 
 class GroupCommunication:
     def __init__(self, client_socket: socket, handle_broadcast_requests, aes_key):
@@ -201,7 +218,7 @@ class GroupCommunication:
         """
 
         self.client_socket = client_socket
-        # add aes key here
+        self.current_folder = None
         self.aes_key = aes_key
         self.handle_broadcast_requests = handle_broadcast_requests  # Define the callback function
 
@@ -310,17 +327,19 @@ class GroupCommunication:
                 received_data = pickle.loads(self.recv_data(self.client_socket))
                 print(f"Received data from broadcast in client: {received_data}")
                 flag = received_data.get("FLAG")
-                if flag == "<GET_ROOMS>":
-                    print("get users")
+                current_folder = received_data.get("CURRENT_FOLDER")
+                if self.current_folder == current_folder:
+                    if flag == "<GET_ROOMS>":
+                        print("get users")
 
-                if flag == "<LEFT>":
-                    print("left")
-                    self.running = False
-                    break
+                    if flag == "<LEFT>":
+                        print("left")
+                        self.running = False
+                        break
 
-                # Check if the callback is set before calling it
-                if on_broadcast_callback:
-                    on_broadcast_callback(received_data)
+                    # Check if the callback is set before calling it
+                    if on_broadcast_callback:
+                        on_broadcast_callback(received_data)
         except Exception as e:
             return
 
@@ -360,7 +379,7 @@ class GroupCommunication:
                     break
                 file_content += data
 
-        all_file_content = [short_filename, file_size, short_file_date, file_content, file_folder, is_broadcast]
+        all_file_content = [short_filename, file_size, short_file_date, file_content, file_folder]
         data_dict = {"FLAG": '<SEND>', "DATA": all_file_content}
 
         self.send_data(self.client_socket, pickle.dumps(data_dict))
@@ -439,6 +458,7 @@ class GroupCommunication:
         Raises:
             Any exception that occurs during the processing.
         """
+        self.current_folder = file_folder
         try:
             operation_dict = {"FLAG": "<NARF>", "DATA": file_folder}
             self.send_data(self.client_socket, pickle.dumps(operation_dict))
@@ -489,6 +509,10 @@ class GroupCommunication:
         except Exception as e:
             print(f"Error while logging out: {e}")
 
+    def handle_search_request(self, search_query):
+        self.current_folder = search_query
+        data_dict = {"FLAG": "<SEARCH>", "DATA": search_query}
+        self.send_data(self.client_socket, pickle.dumps(data_dict))
 
 # ------------Client setup------------
 HOST = '127.0.0.1' #'192.168.1.201'
