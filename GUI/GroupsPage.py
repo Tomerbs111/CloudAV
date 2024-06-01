@@ -807,6 +807,7 @@ class GroupsPage(ttk.Frame):
 
     def create_new_folder(self, recived_data):
         owner, name, size, date, groupName, folder = recived_data
-        formatted_date = self.set_date_format(date)
-        formatted_size = self.set_size_format(size)
-        self.add_folder_frame(name, formatted_size, formatted_date, owner, 0)
+        formatted_date = self.set_date_format(pickle.loads(date))
+        formatted_file_size = self.set_size_format(size)
+        formatted_file_size = str(size) + " items"
+        self.add_folder_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_date, owner, 0)
