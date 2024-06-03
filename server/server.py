@@ -377,96 +377,117 @@ class Server:
             client_socket.close()
 
     def handle_personal_search_action(self, client_socket, user_files_manager, identifier, search_data, aes_key):
-        print("in personal search")
-        # Perform search on user files
-        user_results = user_files_manager.search_files(search_data)
+        try:
+            print("in personal search")
+            # Perform search on user files
+            user_results = user_files_manager.search_files(search_data)
 
-        # Initialize results as an empty list if they are None
-        if user_results is None:
-            user_results = []
+            # Initialize results as an empty list if they are None
+            if user_results is None:
+                user_results = []
 
-        # Send the search results back to the client
-        response_data = {
-            "FLAG": "<SEARCH_RESULTS>",
-            "DATA": user_results
-        }
-        print(response_data)
-        self.send_data(client_socket, pickle.dumps(response_data), aes_key)
+            # Send the search results back to the client
+            response_data = {
+                "FLAG": "<SEARCH_RESULTS>",
+                "DATA": user_results
+            }
+            print(response_data)
+            self.send_data(client_socket, pickle.dumps(response_data), aes_key)
+        except Exception as e:
+            print(f"Error in personal search action: {e}")
+            client_socket.close()
 
-    def handle_group_search_action(self, client_socket, group_manager, identifier, search_data, aes_key, favorite_manager):
-        print("in group search")
-        user_email = AuthManager().get_email(identifier)
-        room_manager = RoomManager()
+    def handle_group_search_action(self, client_socket, group_manager, identifier, search_data, aes_key,
+                                   favorite_manager):
+        try:
+            print("in group search")
+            user_email = AuthManager().get_email(identifier)
+            room_manager = RoomManager()
 
-        room_lst = room_manager.get_rooms_by_participant(user_email)
+            room_lst = room_manager.get_rooms_by_participant(user_email)
 
-        # Perform search on group files
-        group_results = group_manager.search_files(search_data, favorite_manager, room_lst)
+            # Perform search on group files
+            group_results = group_manager.search_files(search_data, favorite_manager, room_lst)
 
-        # Initialize results as an empty list if they are None
-        if group_results is None:
-            group_results = []
+            # Initialize results as an empty list if they are None
+            if group_results is None:
+                group_results = []
 
-        # Send the search results back to the client
-        response_data = {
-            "FLAG": "<SEARCH_RESULTS>",
-            "DATA": group_results,
-            "CURRENT_FOLDER": search_data
-        }
-        print(response_data)
-        self.send_data(client_socket, pickle.dumps(response_data), aes_key)
+            # Send the search results back to the client
+            response_data = {
+                "FLAG": "<SEARCH_RESULTS>",
+                "DATA": group_results,
+                "CURRENT_FOLDER": search_data
+            }
+            print(response_data)
+            self.send_data(client_socket, pickle.dumps(response_data), aes_key)
+        except Exception as e:
+            print(f"Error in group search action: {e}")
+            client_socket.close()
 
     def handle_search_favorites_action(self, client_socket, favorite_manager, search_data, aes_key):
-        print("in search favorites")
+        try:
+            print("in search favorites")
 
-        favorite_results = favorite_manager.search_favorites(search_data)
+            favorite_results = favorite_manager.search_favorites(search_data)
 
-        # Initialize results as an empty list if they are None
-        if favorite_results is None:
-            favorite_results = []
-        # Send the search results back to the client
-        response_data = {
-            "FLAG": "<SEARCH_FAVORITES>",
-            "DATA": favorite_results
-        }
-        print(response_data)
-        self.send_data(client_socket, pickle.dumps(response_data), aes_key)
+            # Initialize results as an empty list if they are None
+            if favorite_results is None:
+                favorite_results = []
+            # Send the search results back to the client
+            response_data = {
+                "FLAG": "<SEARCH_FAVORITES>",
+                "DATA": favorite_results
+            }
+            print(response_data)
+            self.send_data(client_socket, pickle.dumps(response_data), aes_key)
 
-        print("out of search favorites")
+            print("out of search favorites")
+        except Exception as e:
+            print(f"Error in search favorites action: {e}")
+            client_socket.close()
 
     def handle_presaved_files_action(self, client_socket, db_manager, favorite_manager, folder_name, aes_key):
-        print(folder_name)
-        saved_file_prop_lst = []
-        if isinstance(db_manager, GroupFiles):
-            group_name = self.get_group_name(client_socket)
-            saved_file_prop_lst = db_manager.get_all_files_from_group(group_name, folder_name)
-            print(saved_file_prop_lst)
+        try:
+            print(folder_name)
+            saved_file_prop_lst = []
+            if isinstance(db_manager, GroupFiles):
+                group_name = self.get_group_name(client_socket)
+                saved_file_prop_lst = db_manager.get_all_files_from_group(group_name, folder_name)
+                print(saved_file_prop_lst)
 
-        elif isinstance(db_manager, UserFiles):
-            saved_file_prop_lst = db_manager.get_all_data(folder_name)
+            elif isinstance(db_manager, UserFiles):
+                saved_file_prop_lst = db_manager.get_all_data(folder_name)
 
-        data_to_send = {"FLAG": "<NARF>", "DATA": saved_file_prop_lst, "CURRENT_FOLDER": folder_name}
+            data_to_send = {"FLAG": "<NARF>", "DATA": saved_file_prop_lst, "CURRENT_FOLDER": folder_name}
 
-        self.send_data(client_socket, pickle.dumps(data_to_send), aes_key)
+            self.send_data(client_socket, pickle.dumps(data_to_send), aes_key)
+        except Exception as e:
+            print(f"Error in presaved files action: {e}")
+            client_socket.close()
 
     def handle_create_folder_action(self, client_socket, db_manager, create_folder_data):
-        folder_name = create_folder_data[0]
-        folder_size = create_folder_data[1]
-        folder_date = create_folder_data[2]
-        folder_bytes = b""
-        folder_folder = create_folder_data[3]
+        try:
+            folder_name = create_folder_data[0]
+            folder_size = create_folder_data[1]
+            folder_date = create_folder_data[2]
+            folder_bytes = b""
+            folder_folder = create_folder_data[3]
 
-        if isinstance(db_manager, UserFiles):
-            db_manager.insert_file(folder_name, folder_size, folder_date, folder_bytes, folder_folder)
+            if isinstance(db_manager, UserFiles):
+                db_manager.insert_file(folder_name, folder_size, folder_date, folder_bytes, folder_folder)
 
-        elif isinstance(db_manager, GroupFiles):
-            print(create_folder_data)
-            group_name = create_folder_data[4]
-            db_manager.insert_file(folder_name, folder_size, folder_date, group_name, folder_folder, folder_bytes)
-            folder_info = db_manager.get_file_info(group_name, folder_name, folder_folder)
-            queued_info = {"FLAG": "<SEND>", "DATA": [folder_info], "CURRENT_FOLDER": folder_folder}
+            elif isinstance(db_manager, GroupFiles):
+                print(create_folder_data)
+                group_name = create_folder_data[4]
+                db_manager.insert_file(folder_name, folder_size, folder_date, group_name, folder_folder, folder_bytes)
+                folder_info = db_manager.get_file_info(group_name, folder_name, folder_folder)
+                queued_info = {"FLAG": "<SEND>", "DATA": [folder_info], "CURRENT_FOLDER": folder_folder}
 
-            self.file_queue.put((client_socket, queued_info, group_name))
+                self.file_queue.put((client_socket, queued_info, group_name))
+        except Exception as e:
+            print(f"Error in create folder action: {e}")
+            client_socket.close()
 
     def handle_send_file_action(self, client_socket, db_manager, all_file_content):
         try:
@@ -477,15 +498,13 @@ class Server:
             file_folder = all_file_content[4]
 
             if isinstance(db_manager, GroupFiles):
-                is_broadcast = all_file_content[5]
                 group_name = self.get_group_name(client_socket)
                 db_manager.insert_file(file_name, file_size, file_date, group_name, file_folder, file_bytes)
-                if is_broadcast:
-                    file_info = self.get_file_info(db_manager, group_name, file_name, file_folder)
-                    print(f"File info: {file_info}")
-                    queued_info = {"FLAG": "<SEND>", "DATA": [file_info], "CURRENT_FOLDER": file_folder}
+                file_info = self.get_file_info(db_manager, group_name, file_name, file_folder)
+                print(f"File info: {file_info}")
+                queued_info = {"FLAG": "<SEND>", "DATA": [file_info], "CURRENT_FOLDER": file_folder}
 
-                self.file_queue.put((client_socket, queued_info))
+                self.file_queue.put((client_socket, queued_info, group_name))
 
             elif isinstance(db_manager, UserFiles):
                 db_manager.insert_file(file_name, file_size, file_date, file_bytes, file_folder)
@@ -497,10 +516,10 @@ class Server:
             client_socket.close()
 
     def handle_receive_files_action(self, client_socket, db_manager, recv_data, aes_key):
-        select_file_names_lst = recv_data[0]
-        print(select_file_names_lst)
-        folder_name = recv_data[1]
         try:
+            select_file_names_lst = recv_data[0]
+            print(select_file_names_lst)
+            folder_name = recv_data[1]
             file_data_name_dict = {}
             if isinstance(db_manager, GroupFiles):
                 for individual_file in select_file_names_lst:
@@ -528,6 +547,7 @@ class Server:
             current_folder = delete_data[2]
 
             if isinstance(db_manager, GroupFiles):
+                group_name = self.get_group_name(client_socket)
                 for individual_file in file_names_lst:
                     db_manager.delete_file(self.get_group_name(client_socket), individual_file, current_folder)
                     queued_info = {"FLAG": "<DELETE>", "DATA": individual_file, "CURRENT_FOLDER": current_folder}
@@ -579,108 +599,130 @@ class Server:
             client_socket.close()
 
     def handle_rename_file_action(self, client_socket, db_manager, rename_data, type_of_rename):
-        old_name = rename_data[0]
-        new_name = rename_data[1]
-        file_folder = rename_data[2]
+        try:
+            old_name = rename_data[0]
+            new_name = rename_data[1]
+            file_folder = rename_data[2]
 
-        print(old_name, new_name, file_folder, type_of_rename)
-        if type_of_rename == "<FILE>":
-            if isinstance(db_manager, GroupFiles):
-                group_name = self.get_group_name(client_socket)
-                db_manager.rename_file(group_name, old_name, new_name, file_folder)
+            print(old_name, new_name, file_folder, type_of_rename)
+            if type_of_rename == "<FILE>":
+                if isinstance(db_manager, GroupFiles):
+                    group_name = self.get_group_name(client_socket)
+                    db_manager.rename_file(group_name, old_name, new_name, file_folder)
 
-                queued_info = {"FLAG": "<RENAME>", "DATA": rename_data, "CURRENT_FOLDER": file_folder}
-                self.file_queue.put((client_socket, queued_info, group_name))
+                    queued_info = {"FLAG": "<RENAME>", "DATA": rename_data, "CURRENT_FOLDER": file_folder}
+                    self.file_queue.put((client_socket, queued_info, group_name))
 
-            if isinstance(db_manager, UserFiles):
-                db_manager.rename_file(old_name, new_name, file_folder)
-            print("File renamed successfully.")
+                if isinstance(db_manager, UserFiles):
+                    db_manager.rename_file(old_name, new_name, file_folder)
+                print("File renamed successfully.")
 
-        elif type_of_rename == "<FOLDER>":
-            if isinstance(db_manager, GroupFiles):
-                group_name = self.get_group_name(client_socket)
-                db_manager.rename_file(group_name, old_name, new_name, file_folder)
-                db_manager.rename_folder_files(group_name, old_name.replace(" <folder>", ""),
-                                               new_name.replace(" <folder>", ""))
+            elif type_of_rename == "<FOLDER>":
+                if isinstance(db_manager, GroupFiles):
+                    group_name = self.get_group_name(client_socket)
+                    db_manager.rename_file(group_name, old_name, new_name, file_folder)
+                    db_manager.rename_folder_files(group_name, old_name.replace(" <folder>", ""),
+                                                   new_name.replace(" <folder>", ""))
 
-                queued_info = {"FLAG": "<RENAME>", "DATA": rename_data, "CURRENT_FOLDER": file_folder}
-                self.file_queue.put((client_socket, queued_info, group_name))
+                    queued_info = {"FLAG": "<RENAME>", "DATA": rename_data, "CURRENT_FOLDER": file_folder}
+                    self.file_queue.put((client_socket, queued_info, group_name))
 
-            if isinstance(db_manager, UserFiles):
-                db_manager.rename_file(old_name, new_name, file_folder)
-                db_manager.rename_folder_files(old_name.replace(" <folder>", ""), new_name.replace(" <folder>", ""))
-            print("Folder renamed successfully.")
+                if isinstance(db_manager, UserFiles):
+                    db_manager.rename_file(old_name, new_name, file_folder)
+                    db_manager.rename_folder_files(old_name.replace(" <folder>", ""), new_name.replace(" <folder>", ""))
+                print("Folder renamed successfully.")
+        except Exception as e:
+            print(f"Error in rename file action: {e}")
+            client_socket.close()
 
     def handle_favorite_file_action(self, client_socket, db_manager, favorite_manager, favorite_data):
-        favorite_file_name = favorite_data[0]
-        favorite_file_type = favorite_data[1]
+        try:
+            favorite_file_name = favorite_data[0]
+            favorite_file_type = favorite_data[1]
 
-        favorite_manager.set_favorite_status(favorite_file_name, favorite_file_type, 1)
+            favorite_manager.set_favorite_status(favorite_file_name, favorite_file_type, 1)
 
-        if isinstance(db_manager, UserFiles):
-            db_manager.set_favorite_status(favorite_file_name, 1)
-            if favorite_manager.get_favorite_status(favorite_file_name, 'personal') is None:
-                favorite_manager.insert_favorite(favorite_file_name, 'personal', 1)
+            if isinstance(db_manager, UserFiles):
+                db_manager.set_favorite_status(favorite_file_name, 1)
+                if favorite_manager.get_favorite_status(favorite_file_name, 'personal') is None:
+                    favorite_manager.insert_favorite(favorite_file_name, 'personal', 1)
 
-        elif isinstance(db_manager, GroupFiles):
-            group_name = self.get_group_name(client_socket)
-            if favorite_manager.get_favorite_status(favorite_file_name, group_name) is None:
-                favorite_manager.insert_favorite(favorite_file_name, group_name, 1)
-        else:
-            print("Unknown database manager type.")
+            elif isinstance(db_manager, GroupFiles):
+                group_name = self.get_group_name(client_socket)
+                if favorite_manager.get_favorite_status(favorite_file_name, group_name) is None:
+                    favorite_manager.insert_favorite(favorite_file_name, group_name, 1)
+            else:
+                print("Unknown database manager type.")
+        except Exception as e:
+            print(f"Error in favorite file action: {e}")
+            client_socket.close()
 
     def handle_unfavorite_file_action(self, client_socket, db_manager, favorite_manager, favorite_data):
-        unfavorite_file_name = favorite_data[0]
-        unfavorite_file_type = favorite_data[1]
+        try:
+            unfavorite_file_name = favorite_data[0]
+            unfavorite_file_type = favorite_data[1]
 
-        favorite_manager.set_favorite_status(unfavorite_file_name, unfavorite_file_type, 0)
+            favorite_manager.set_favorite_status(unfavorite_file_name, unfavorite_file_type, 0)
 
+            if isinstance(db_manager, UserFiles):
+                db_manager.set_favorite_status(unfavorite_file_name, 0)
+                if favorite_manager.get_favorite_status(unfavorite_file_name, 'personal') is None:
+                    favorite_manager.insert_favorite(unfavorite_file_name, 'personal', 0)
 
-        if isinstance(db_manager, UserFiles):
-            db_manager.set_favorite_status(unfavorite_file_name, 0)
-            if favorite_manager.get_favorite_status(unfavorite_file_name, 'personal') is None:
-                favorite_manager.insert_favorite(unfavorite_file_name, 'personal', 0)
-
-
-        elif isinstance(db_manager, GroupFiles):
-            group_name = self.get_group_name(client_socket)
-            if favorite_manager.get_favorite_status(unfavorite_file_name, group_name) is None:
-                favorite_manager.insert_favorite(unfavorite_file_name, group_name, 0)
-        else:
-            print("Unknown database manager type.")
+            elif isinstance(db_manager, GroupFiles):
+                group_name = self.get_group_name(client_socket)
+                if favorite_manager.get_favorite_status(unfavorite_file_name, group_name) is None:
+                    favorite_manager.insert_favorite(unfavorite_file_name, group_name, 0)
+            else:
+                print("Unknown database manager type.")
+        except Exception as e:
+            print(f"Error in unfavorite file action: {e}")
+            client_socket.close()
 
     def handle_get_all_favorites_action(self, client_socket, favorite_manager, aes_key):
-        all_favorites = favorite_manager.get_all_favorites()
+        try:
+            all_favorites = favorite_manager.get_all_favorites()
 
-        data_to_send = {"FLAG": "<GET_ALL_FAVORITES>", "DATA": all_favorites}
-        self.send_data(client_socket, pickle.dumps(data_to_send), aes_key)
-        print(f"Sent all favorites to the client.")
+            data_to_send = {"FLAG": "<GET_ALL_FAVORITES>", "DATA": all_favorites}
+            self.send_data(client_socket, pickle.dumps(data_to_send), aes_key)
+            print(f"Sent all favorites to the client.")
+        except Exception as e:
+            print(f"Error in get all favorites action: {e}")
+            client_socket.close()
 
     def handle_get_users_action(self, client_socket, identifier, aes_key):
-        all_users = AuthManager().get_all_users(identifier)
-        print(f"this is all users {all_users}")
-        data_to_send = {"FLAG": "<GET_USERS>", "DATA": all_users}
-        self.send_data(client_socket, pickle.dumps(data_to_send), aes_key)
-        print(f"Sent users list to the client.")
+        try:
+            all_users = AuthManager().get_all_users(identifier)
+            print(f"this is all users {all_users}")
+            data_to_send = {"FLAG": "<GET_USERS>", "DATA": all_users}
+            self.send_data(client_socket, pickle.dumps(data_to_send), aes_key)
+            print(f"Sent users list to the client.")
+        except Exception as e:
+            print(f"Error in get users action: {e}")
+            client_socket.close()
 
     def handle_create_group_action(self, client_socket, identifier, group_data):
-        user_email = AuthManager().get_email(identifier)
+        try:
+            user_email = AuthManager().get_email(identifier)
 
-        group_name = group_data[0]
-        group_participants = group_data[1]
-        group_participants.append(user_email)
-        group_permissions = group_data[2]
-        permission_values = []
+            group_name = group_data[0]
+            group_participants = group_data[1]
+            group_participants.append(user_email)
+            group_permissions = group_data[2]
+            permission_values = []
 
-        for permission in group_permissions:
-            permission_values.append(str(group_permissions[permission]))
+            for permission in group_permissions:
+                permission_values.append(str(group_permissions[permission]))
 
-        print(permission_values)
+            print(permission_values)
 
-        # Create a room in the database using RoomManager
-        room_manager = RoomManager()
-        room_manager.insert_room(group_name, ",".join(group_participants), user_email, permission_values)
-        print(f"Group created successfully.")
+            # Create a room in the database using RoomManager
+            room_manager = RoomManager()
+            room_manager.insert_room(group_name, ",".join(group_participants), user_email, permission_values)
+            print(f"Group created successfully.")
+        except Exception as e:
+            print(f"Error in create group action: {e}")
+            client_socket.close()
 
     def handle_get_rooms_action(self, client_socket, identifier, aes_key):
         try:
@@ -854,20 +896,34 @@ class Server:
             print(f"Error in handle_leave_group_action: {e}")
             client_socket.close()
 
+    import pyotp
+
     def get_file_info(self, group_manager, group_name, filename, file_folder):
-        return group_manager.get_file_info(group_name, filename, file_folder)
+        try:
+            return group_manager.get_file_info(group_name, filename, file_folder)
+        except Exception as e:
+            print(f"Error getting file info: {e}")
+            return None
 
     def get_group_name(self, client_socket):
-        for index, group_user in enumerate(self.clients_list):
-            if group_user.user_socket == client_socket:
-                return group_user.group_name
+        try:
+            for index, group_user in enumerate(self.clients_list):
+                if group_user.user_socket == client_socket:
+                    return group_user.group_name
+        except Exception as e:
+            print(f"Error getting group name: {e}")
+            return None
 
     def create_verification_code(self):
-        key = "TomerBenShushanSecretKey"
-        totp = pyotp.TOTP(key)
+        try:
+            key = "TomerBenShushanSecretKey"
+            totp = pyotp.TOTP(key)
 
-        # return totp.now()
-        return "123456"
+            # return totp.now()
+            return "123456"
+        except Exception as e:
+            print(f"Error creating verification code: {e}")
+            return None
 
     def send_otp_email(self, u_email, u_username, client_socket):
         # Generate a random password of the specified length
@@ -919,13 +975,18 @@ class Server:
             print("Email failed to send.")
 
     def handle_logout_action(self, client_socket, aes_key):
-        for group_user in self.clients_list:
-            if group_user.user_socket == client_socket:
-                self.clients_list.remove(group_user)
-                break
-        self.send_data(client_socket, pickle.dumps({"FLAG": "<LEFT>"}), aes_key)
-        identifier = None
-        self.handle_register_login(client_socket, identifier, aes_key)
+        try:
+            for group_user in self.clients_list:
+                if group_user.user_socket == client_socket:
+                    self.clients_list.remove(group_user)
+                    break
+            self.send_data(client_socket, pickle.dumps({"FLAG": "<LEFT>"}), aes_key)
+            identifier = None
+            self.handle_register_login(client_socket, identifier, aes_key)
+
+        except Exception as e:
+            print(f"Error in handle_leave_group_action: {e}")
+            client_socket.close()
 
 
 if __name__ == "__main__":

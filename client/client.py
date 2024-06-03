@@ -11,83 +11,211 @@ from GUI.MyApp import MyApp
 
 
 class ClientCommunication:
-    def __init__(self, client_socket: socket, aes_key):
+    """
+    Initializes the class with the client_socket and aes_key.
+
+    Parameters:
+        client_socket: The client socket object.
+        aes_key: The AES key to use for encryption.
+
+    Returns:
+        None
+    """
+
+    def __init__(self, client_socket, aes_key):
+        """
+        Initializes the ClientCommunication class with a client socket and AES key.
+
+        Parameters:
+            client_socket: The client socket object.
+            aes_key: The AES key to use for encryption.
+        """
         self.client_socket = client_socket
         self.aes_key = aes_key
-        # add aes key here
 
-    def send_data(self, client_socket: socket, data: str | bytes):
-        encrypted_data = EncryptionFunctions.encrypt_AES_message(data, self.aes_key)
-        CommsFunctions.send_data(client_socket, encrypted_data)
+    def send_data(self, client_socket, data: str | bytes):
+        """
+        Encrypts and sends data to the server.
 
-    def recv_data(self, client_socket: socket):
-        encrypted_data = CommsFunctions.recv_data(client_socket)
-        decrypted_data = EncryptionFunctions.decrypt_AES_message(encrypted_data, self.aes_key)
-        return decrypted_data
+        Parameters:
+            client_socket (socket.socket): The client socket object.
+            data (str | bytes): The data to send.
+
+        Returns:
+            None
+        """
+        try:
+            encrypted_data = EncryptionFunctions.encrypt_AES_message(data, self.aes_key)
+            CommsFunctions.send_data(client_socket, encrypted_data)
+        except Exception as e:
+            print(f"Error sending data: {e}")
+
+    def recv_data(self, client_socket):
+        """
+        Receives and decrypts data from the server.
+
+        Parameters:
+            client_socket (socket.socket): The client socket object.
+
+        Returns:
+            decrypted_data (str | bytes): The decrypted data received from the server.
+        """
+        try:
+            encrypted_data = CommsFunctions.recv_data(client_socket)
+            decrypted_data = EncryptionFunctions.decrypt_AES_message(encrypted_data, self.aes_key)
+            return decrypted_data
+        except Exception as e:
+            print(f"Error receiving data: {e}")
+            return None
 
     def handle_client_register(self, attempt_type, u_email, u_username, u_password):
-        field_dict = {
-            'email': u_email,
-            'username': u_username,
-            'password': u_password,
-        }
+        """
+        Handles client registration.
 
-        data_dict = {"FLAG": attempt_type, "DATA": field_dict}
-        self.send_data(self.client_socket, pickle.dumps(data_dict))
+        Parameters:
+            attempt_type (str): The type of registration attempt.
+            u_email (str): The user's email.
+            u_username (str): The user's username.
+            u_password (str): The user's password.
 
-        server_answer = pickle.loads(self.recv_data(self.client_socket))
-        answer_flag = server_answer.get("FLAG")
-        return answer_flag
+        Returns:
+            answer_flag (str): The server's response flag.
+        """
+        try:
+            field_dict = {
+                'email': u_email,
+                'username': u_username,
+                'password': u_password,
+            }
+
+            data_dict = {"FLAG": attempt_type, "DATA": field_dict}
+            self.send_data(self.client_socket, pickle.dumps(data_dict))
+
+            server_answer = pickle.loads(self.recv_data(self.client_socket))
+            answer_flag = server_answer.get("FLAG")
+            return answer_flag
+        except Exception as e:
+            print(f"Error in client register: {e}")
+            return None
 
     def handle_client_login(self, attempt_type, u_email, u_password):
-        field_dict = {
-            'email': u_email,
-            'password': u_password
-        }
+        """
+        Handles client login.
 
-        data_dict = {"FLAG": attempt_type, "DATA": field_dict}
-        self.send_data(self.client_socket, pickle.dumps(data_dict))
+        Parameters:
+            attempt_type (str): The type of login attempt.
+            u_email (str): The user's email.
+            u_password (str): The user's password.
 
-        server_answer = pickle.loads(self.recv_data(self.client_socket))
-        print(server_answer)
-        answer_flag = server_answer.get("FLAG")
-        if answer_flag == "<SUCCESS>":
-            username = server_answer.get("DATA")
-            return username
-        else:
-            return answer_flag
+        Returns:
+            username (str) | answer_flag (str): The username if login is successful, otherwise the server's response flag.
+        """
+        try:
+            field_dict = {
+                'email': u_email,
+                'password': u_password
+            }
+
+            data_dict = {"FLAG": attempt_type, "DATA": field_dict}
+            self.send_data(self.client_socket, pickle.dumps(data_dict))
+
+            server_answer = pickle.loads(self.recv_data(self.client_socket))
+            print(server_answer)
+            answer_flag = server_answer.get("FLAG")
+            if answer_flag == "<SUCCESS>":
+                username = server_answer.get("DATA")
+                return username
+            else:
+                return answer_flag
+        except Exception as e:
+            print(f"Error in client login: {e}")
+            return None
 
     def handle_client_2fa(self, u_code):
+        """
+        Handles client two-factor authentication.
 
-        data_dict = {"FLAG": '<2FA>', "DATA": u_code}
-        self.send_data(self.client_socket, pickle.dumps(data_dict))
+        Parameters:
+            u_code (str): The 2FA code.
 
-        server_answer = pickle.loads(self.recv_data(self.client_socket))
-        print(server_answer)
-        return server_answer
+        Returns:
+            server_answer (dict): The server's response.
+        """
+        try:
+            data_dict = {"FLAG": '<2FA>', "DATA": u_code}
+            self.send_data(self.client_socket, pickle.dumps(data_dict))
+
+            server_answer = pickle.loads(self.recv_data(self.client_socket))
+            print(server_answer)
+            return server_answer
+        except Exception as e:
+            print(f"Error in client 2FA: {e}")
+            return None
 
     def handle_add_new_folder_request(self, real_folder_name, folder_size, folder_date, folder_folder):
-        data_dict = {"FLAG": '<CREATE_FOLDER>', "DATA": (real_folder_name, folder_size, folder_date, folder_folder)}
-        self.send_data(self.client_socket, pickle.dumps(data_dict))
+        """
+        Sends a request to create a new folder on the server.
 
-        print(f"Folder '{real_folder_name}' created successfully")
+        Parameters:
+            real_folder_name (str): The name of the new folder.
+            folder_size (int): The size of the folder.
+            folder_date (str): The creation date of the folder.
+            folder_folder (str): The parent folder of the new folder.
+
+        Returns:
+            None
+        """
+        try:
+            data_dict = {"FLAG": '<CREATE_FOLDER>', "DATA": (real_folder_name, folder_size, folder_date, folder_folder)}
+            self.send_data(self.client_socket, pickle.dumps(data_dict))
+
+            print(f"Folder '{real_folder_name}' created successfully")
+        except Exception as e:
+            print(f"Error adding new folder: {e}")
 
     def handle_send_file_request(self, file_name, short_filename, short_file_date, file_size, file_folder):
-        file_content = b''
-        with open(file_name, 'rb') as file:
-            while True:
-                data = file.read(1024)
-                if not data:
-                    break
-                file_content += data
+        """
+        Sends a file to the server.
 
-        all_file_content = [short_filename, file_size, short_file_date, file_content, file_folder]
-        data_dict = {"FLAG": '<SEND>', "DATA": all_file_content}
-        self.send_data(self.client_socket, pickle.dumps(data_dict))
+        Parameters:
+            file_name (str): The path to the file.
+            short_filename (str): The short name of the file.
+            short_file_date (str): The date of the file.
+            file_size (int): The size of the file.
+            file_folder (str): The folder where the file will be saved.
 
-        print(f"File '{file_name}' sent successfully")
+        Returns:
+            None
+        """
+        try:
+            file_content = b''
+            with open(file_name, 'rb') as file:
+                while True:
+                    data = file.read(1024)
+                    if not data:
+                        break
+                    file_content += data
+
+            all_file_content = [short_filename, file_size, short_file_date, file_content, file_folder]
+            data_dict = {"FLAG": '<SEND>', "DATA": all_file_content}
+            self.send_data(self.client_socket, pickle.dumps(data_dict))
+
+            print(f"File '{file_name}' sent successfully")
+        except Exception as e:
+            print(f"Error sending file: {e}")
 
     def handle_download_request_client(self, select_file_names_lst, save_path, file_folder):
+        """
+        Downloads files from the server.
+
+        Parameters:
+            select_file_names_lst (list): List of file names to download.
+            save_path (str): The path to save the downloaded files.
+            file_folder (str): The folder from which to download files.
+
+        Returns:
+            None
+        """
         try:
             data_dict = {"FLAG": '<RECV>', "DATA": [select_file_names_lst, file_folder]}
             self.send_data(self.client_socket, pickle.dumps(data_dict))
@@ -100,106 +228,247 @@ class ClientCommunication:
                 with open(file_path, "wb") as file:
                     file.write(indiv_filebytes)
                     print(f"File '{indiv_filename}' received successfully.")
-
         except Exception as e:
             print(f"Error in receive_checked_files: {e}")
 
     def handle_download_folder_request_client(self, folder_name, save_path):
-        data_dict = {"FLAG": "<RECV_FOLDER>", "DATA": folder_name}
-        self.send_data(self.client_socket, pickle.dumps(data_dict))
+        """
+        Downloads a folder from the server.
 
-        received_data = pickle.loads(self.recv_data(self.client_socket))
-        zip_data = received_data.get("DATA")[0]
-        print(zip_data)
+        Parameters:
+            folder_name (str): The name of the folder to download.
+            save_path (str): The path to save the downloaded folder.
 
-        zip_file_name = f"{folder_name}.zip"
-        zip_file_path = os.path.join(save_path, zip_file_name)
-        with open(zip_file_path, 'wb') as zip_file:
-            zip_file.write(zip_data)
+        Returns:
+            None
+        """
+        try:
+            data_dict = {"FLAG": "<RECV_FOLDER>", "DATA": folder_name}
+            self.send_data(self.client_socket, pickle.dumps(data_dict))
+
+            received_data = pickle.loads(self.recv_data(self.client_socket))
+            zip_data = received_data.get("DATA")[0]
+            print(zip_data)
+
+            zip_file_name = f"{folder_name}.zip"
+            zip_file_path = os.path.join(save_path, zip_file_name)
+            with open(zip_file_path, 'wb') as zip_file:
+                zip_file.write(zip_data)
+        except Exception as e:
+            print(f"Error downloading folder: {e}")
 
     def handle_presaved_files_client(self, file_folder):
-        operation_dict = {"FLAG": "<NARF>", "DATA": file_folder}
-        self.send_data(self.client_socket, pickle.dumps(operation_dict))
+        """
+        Retrieves pre-saved files from the server.
 
-        received_data = pickle.loads(self.recv_data(self.client_socket))
-        saved_file_prop_lst = received_data.get("DATA")
-        print(saved_file_prop_lst)
+        Parameters:
+            file_folder (str): The folder to retrieve pre-saved files from.
 
-        return saved_file_prop_lst
+        Returns:
+            saved_file_prop_lst (list): List of pre-saved file properties.
+        """
+        try:
+            operation_dict = {"FLAG": "<NARF>", "DATA": file_folder}
+            self.send_data(self.client_socket, pickle.dumps(operation_dict))
+
+            received_data = pickle.loads(self.recv_data(self.client_socket))
+            saved_file_prop_lst = received_data.get("DATA")
+            print(saved_file_prop_lst)
+
+            return saved_file_prop_lst
+        except Exception as e:
+            print(f"Error retrieving pre-saved files: {e}")
+            return None
 
     def handle_delete_request_client(self, select_file_names_lst, folders_to_delete, current_folder):
-        data_dict = {"FLAG": '<DELETE>', "DATA": [select_file_names_lst, folders_to_delete, current_folder]}
-        self.send_data(self.client_socket, pickle.dumps(data_dict))
-        print("Files deleted successfully.")
+        """
+        Sends a request to delete files and folders on the server.
+
+        Parameters:
+            select_file_names_lst (list): List of file names to delete.
+            folders_to_delete (list): List of folder names to delete.
+            current_folder (str): The current folder from which to delete files and folders.
+
+        Returns:
+            None
+        """
+        try:
+            data_dict = {"FLAG": '<DELETE>', "DATA": [select_file_names_lst, folders_to_delete, current_folder]}
+            self.send_data(self.client_socket, pickle.dumps(data_dict))
+            print("Files deleted successfully.")
+        except Exception as e:
+            print(f"Error deleting files: {e}")
 
     def handle_rename_request_client(self, rename_data, type_of_rename):
-        data_dict = {"FLAG": '<RENAME>', "DATA": rename_data, "TYPE": type_of_rename}
-        self.send_data(self.client_socket, pickle.dumps(data_dict))
-        print("Files renamed successfully.")
+        """
+        Sends a request to rename files or folders on the server.
+
+        Parameters:
+            rename_data (tuple): A tuple containing the old name, new name, and folder.
+            type_of_rename (str): The type of rename operation ('<FILE>' or '<FOLDER>').
+
+        Returns:
+            None
+        """
+        try:
+            data_dict = {"FLAG": '<RENAME>', "DATA": rename_data, "TYPE": type_of_rename}
+            self.send_data(self.client_socket, pickle.dumps(data_dict))
+            print("Files renamed successfully.")
+        except Exception as e:
+            print(f"Error renaming files: {e}")
 
     def handle_set_favorite_request_client(self, file_name, switch_value):
-        if switch_value == "on":
-            data_dict_on = {"FLAG": '<FAVORITE>', "DATA": [file_name, 'personal']}
-            self.send_data(self.client_socket, pickle.dumps(data_dict_on))
+        """
+        Sets or unsets a file as a favorite.
 
-            print(f"File '{file_name}' favorited.")
+        Parameters:
+            file_name (str): The name of the file.
+            switch_value (str): 'on' to set as favorite, 'off' to unset as favorite.
 
-        elif switch_value == "off":
-            data_dict_off = {"FLAG": '<UNFAVORITE>', "DATA": [file_name, 'personal']}
-            self.send_data(self.client_socket, pickle.dumps(data_dict_off))
-
-            print(f"File '{file_name}' unfavorited.")
+        Returns:
+            None
+        """
+        try:
+            if switch_value == "on":
+                data_dict_on = {"FLAG": '<FAVORITE>', "DATA": [file_name, 'personal']}
+                self.send_data(self.client_socket, pickle.dumps(data_dict_on))
+                print(f"File '{file_name}' favorited.")
+            elif switch_value == "off":
+                data_dict_off = {"FLAG": '<UNFAVORITE>', "DATA": [file_name, 'personal']}
+                self.send_data(self.client_socket, pickle.dumps(data_dict_off))
+                print(f"File '{file_name}' unfavorited.")
+        except Exception as e:
+            print(f"Error setting favorite: {e}")
 
     def get_all_registered_users(self):
-        data_dict = {"FLAG": "<GET_USERS>"}
-        self.send_data(self.client_socket, pickle.dumps(data_dict))
+        """
+        Retrieves all registered users from the server.
 
-        received_data = pickle.loads(self.recv_data(self.client_socket))
-        all_users = received_data.get("DATA")
-        return all_users
+        Returns:
+            all_users (list): List of all registered users.
+        """
+        try:
+            data_dict = {"FLAG": "<GET_USERS>"}
+            self.send_data(self.client_socket, pickle.dumps(data_dict))
+
+            received_data = pickle.loads(self.recv_data(self.client_socket))
+            all_users = received_data.get("DATA")
+            return all_users
+        except Exception as e:
+            print(f"Error retrieving registered users: {e}")
+            return None
 
     def handle_create_group_request(self, group_name, group_participants, permissions):
-        group_properties = [group_name, group_participants, permissions]
-        data_dict = {"FLAG": '<CREATE_GROUP>', "DATA": group_properties}
-        self.send_data(self.client_socket, pickle.dumps(data_dict))
+        """
+        Sends a request to create a group on the server.
+
+        Parameters:
+            group_name (str): The name of the group.
+            group_participants (list): List of participants in the group.
+            permissions (dict): Dictionary of permissions for the group.
+
+        Returns:
+            None
+        """
+        try:
+            group_properties = [group_name, group_participants, permissions]
+            data_dict = {"FLAG": '<CREATE_GROUP>', "DATA": group_properties}
+            self.send_data(self.client_socket, pickle.dumps(data_dict))
+        except Exception as e:
+            print(f"Error creating group: {e}")
 
     def get_all_groups(self):
-        operation_dict = {"FLAG": "<GET_ROOMS>"}
-        self.send_data(self.client_socket, pickle.dumps(operation_dict))
+        """
+        Retrieves all groups from the server.
 
-        received_data = pickle.loads(self.recv_data(self.client_socket))
-        all_rooms = received_data.get("DATA")
-        return all_rooms
+        Returns:
+            all_rooms (list): List of all groups.
+        """
+        try:
+            operation_dict = {"FLAG": "<GET_ROOMS>"}
+            self.send_data(self.client_socket, pickle.dumps(operation_dict))
+
+            received_data = pickle.loads(self.recv_data(self.client_socket))
+            all_rooms = received_data.get("DATA")
+            return all_rooms
+        except Exception as e:
+            print(f"Error retrieving groups: {e}")
+            return None
 
     def get_all_favorites(self):
-        operation_dict = {"FLAG": "<GET_FAVORITES>"}
-        self.send_data(self.client_socket, pickle.dumps(operation_dict))
+        """
+        Retrieves all favorite files from the server.
 
-        received_data = pickle.loads(self.recv_data(self.client_socket))
-        all_favorites = received_data.get("DATA")
-        return all_favorites
+        Returns:
+            all_favorites (list): List of all favorite files.
+        """
+        try:
+            operation_dict = {"FLAG": "<GET_FAVORITES>"}
+            self.send_data(self.client_socket, pickle.dumps(operation_dict))
+
+            received_data = pickle.loads(self.recv_data(self.client_socket))
+            all_favorites = received_data.get("DATA")
+            return all_favorites
+        except Exception as e:
+            print(f"Error retrieving favorites: {e}")
+            return None
 
     def log_out(self):
-        data_dict = {"FLAG": "<LOGOUT>"}
-        self.send_data(self.client_socket, pickle.dumps(data_dict))
-        print("Logged out successfully.")
+        """
+        Logs out the client from the server.
+
+        Returns:
+            None
+        """
+        try:
+            data_dict = {"FLAG": "<LOGOUT>"}
+            self.send_data(self.client_socket, pickle.dumps(data_dict))
+            print("Logged out successfully.")
+        except Exception as e:
+            print(f"Error logging out: {e}")
 
     def handle_search_request(self, search_query):
-        data_dict = {"FLAG": "<SEARCH>", "DATA": search_query}
-        self.send_data(self.client_socket, pickle.dumps(data_dict))
+        """
+        Searches for files on the server based on a query.
 
-        received_data = pickle.loads(self.recv_data(self.client_socket))
-        search_results = received_data.get("DATA")
-        return search_results
+        Parameters:
+            search_query (str): The search query.
 
-    def search_from_favorites(self, search_query):
-        data_dict = {"FLAG": "<SEARCH_FAVORITES>", "DATA": search_query}
-        self.send_data(self.client_socket, pickle.dumps(data_dict))
+        Returns:
+            search_results (list): List of search results.
+        """
+        try:
+            data_dict = {"FLAG": "<SEARCH>", "DATA": search_query}
+            self.send_data(self.client_socket, pickle.dumps(data_dict))
 
-        received_data = pickle.loads(self.recv_data(self.client_socket))
-        if received_data.get("FLAG") == "<SEARCH_FAVORITES>":
+            received_data = pickle.loads(self.recv_data(self.client_socket))
             search_results = received_data.get("DATA")
             return search_results
+        except Exception as e:
+            print(f"Error in search request: {e}")
+            return None
+
+    def search_from_favorites(self, search_query):
+        """
+        Searches for files within the favorites based on a query.
+
+        Parameters:
+            search_query (str): The search query.
+
+        Returns:
+            search_results (list): List of search results from favorites.
+        """
+        try:
+            data_dict = {"FLAG": "<SEARCH_FAVORITES>", "DATA": search_query}
+            self.send_data(self.client_socket, pickle.dumps(data_dict))
+
+            received_data = pickle.loads(self.recv_data(self.client_socket))
+            if received_data.get("FLAG") == "<SEARCH_FAVORITES>":
+                search_results = received_data.get("DATA")
+                return search_results
+        except Exception as e:
+            print(f"Error in search from favorites: {e}")
+            return None
 
 
 class GroupCommunication:

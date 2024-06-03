@@ -12,129 +12,198 @@ import datetime
 
 class FavoritesFileFrame(ttk.Frame):
     def __init__(self, master, fname, ftype, favorite_callback=None, is_folder=False, click_callback=None):
-        super().__init__(master)
-        self.fname = fname
-        self.ftype = ftype
-        self.is_folder = is_folder
-        self.click_callback = click_callback  # Callback function for click event
+        """
+        Initialize the FavoritesFileFrame.
 
-        self.check_var = StringVar(value="off")
-        self.mark_for_action = ttk.Checkbutton(self, text="",
-                                               variable=self.check_var, onvalue="on", offvalue="off")
-        self.mark_for_action.pack(side='left', padx=5)
+        Parameters:
+        - master: The parent widget.
+        - fname (str): The name of the file or folder.
+        - ftype (str): The type of the file.
+        - favorite_callback (function, optional): Callback function for toggling favorite status. Default is None.
+        - is_folder (bool, optional): Indicates whether the entry represents a folder. Default is False.
+        - click_callback (function, optional): Callback function for click event. Default is None.
+        """
+        try:
+            super().__init__(master)
+            self.fname = fname
+            self.ftype = ftype
+            self.is_folder = is_folder
+            self.click_callback = click_callback  # Callback function for click event
 
-        # Set the default icon path
-        if self.is_folder:
-            icon_path = "../GUI/file_icons/folder_icon.png"  # Set folder icon path
-        else:
-            icon_path = "../GUI/file_icons/other_file_icon.png"
+            self.check_var = StringVar(value="off")
+            self.mark_for_action = ttk.Checkbutton(self, text="",
+                                                    variable=self.check_var, onvalue="on", offvalue="off")
+            self.mark_for_action.pack(side='left', padx=5)
 
-            # Check file type and set icon accordingly
-        if not self.is_folder:
-            if self.is_image(fname):
-                icon_path = "../GUI/file_icons/image_file_icon.png"
-            elif self.is_document(fname):
-                icon_path = "../GUI/file_icons/word_file_icon.png"
-            elif self.is_pdf(fname):
-                icon_path = "../GUI/file_icons/pdf_file_icon.png"
-            elif self.is_powerpoint(fname):
-                icon_path = "../GUI/file_icons/powerpoint_file_icon.png"
-            elif self.is_text(fname):
-                icon_path = "../GUI/file_icons/text_file_icon.png"
-            elif self.is_zip(fname):
-                icon_path = "../GUI/file_icons/zip_file_icon.png"
-            elif self.is_excel(fname):
-                icon_path = "../GUI/file_icons/excel_file_icon.png"
-            elif self.is_video(fname):
-                icon_path = "../GUI/file_icons/video_file_icon.png"
-            elif self.is_code(fname):
-                icon_path = "../GUI/file_icons/code_file_icon.png"
+            # Set the default icon path
+            if self.is_folder:
+                icon_path = "../GUI/file_icons/folder_icon.png"  # Set folder icon path
+            else:
+                icon_path = "../GUI/file_icons/other_file_icon.png"
 
-        # Load the icon image
-        icon_image = Image.open(icon_path)
-        icon_image = icon_image.resize((25, 25))
+                # Check file type and set icon accordingly
+            if not self.is_folder:
+                if self.is_image(fname):
+                    icon_path = "../GUI/file_icons/image_file_icon.png"
+                elif self.is_document(fname):
+                    icon_path = "../GUI/file_icons/word_file_icon.png"
+                elif self.is_pdf(fname):
+                    icon_path = "../GUI/file_icons/pdf_file_icon.png"
+                elif self.is_powerpoint(fname):
+                    icon_path = "../GUI/file_icons/powerpoint_file_icon.png"
+                elif self.is_text(fname):
+                    icon_path = "../GUI/file_icons/text_file_icon.png"
+                elif self.is_zip(fname):
+                    icon_path = "../GUI/file_icons/zip_file_icon.png"
+                elif self.is_excel(fname):
+                    icon_path = "../GUI/file_icons/excel_file_icon.png"
+                elif self.is_video(fname):
+                    icon_path = "../GUI/file_icons/video_file_icon.png"
+                elif self.is_code(fname):
+                    icon_path = "../GUI/file_icons/code_file_icon.png"
 
-        tk_icon_image = ImageTk.PhotoImage(icon_image)
+            # Load the icon image
+            icon_image = Image.open(icon_path)
+            icon_image = icon_image.resize((25, 25))
 
-        # Create a label to display the icon
-        icon_label = ttk.Label(master=self, image=tk_icon_image)
-        icon_label.image = tk_icon_image
-        icon_label.pack(side='left', padx=(0, 5), pady=5)
+            tk_icon_image = ImageTk.PhotoImage(icon_image)
 
-        text_size = 12
+            # Create a label to display the icon
+            icon_label = ttk.Label(master=self, image=tk_icon_image)
+            icon_label.image = tk_icon_image
+            icon_label.pack(side='left', padx=(0, 5), pady=5)
 
-        self.check_favorite = StringVar(value="off")
-        self.favorite_callback = favorite_callback
+            text_size = 12
 
-        self.favorite_button = CTkButton(
-            master=self,
-            image=CTkImage(Image.open("../GUI/file_icons/star_icon.png"), size=(20, 20)),
-            compound='left',
-            text="",
-            width=30,
-            fg_color='transparent',
-            command=self.toggle_favorite  # Assign the command to the function
-        )
+            self.check_favorite = StringVar(value="off")
+            self.favorite_callback = favorite_callback
 
-        self.favorite_button.pack(side='right', padx=5, anchor='e')
+            self.favorite_button = CTkButton(
+                master=self,
+                image=CTkImage(Image.open("../GUI/file_icons/star_icon.png"), size=(20, 20)),
+                compound='left',
+                text="",
+                width=30,
+                fg_color='transparent',
+                command=self.toggle_favorite  # Assign the command to the function
+            )
 
-        # Create a label for the filename
-        self.lu_filename = ttk.Label(
-            master=self,
-            text=self.fname,
-            font=("Arial", text_size),
-            cursor="hand2"  # Change cursor to hand2 to indicate it's clickable
-        )
-        self.lu_filename.pack(side='left', padx=(0, 5), pady=5, anchor='w')
-        self.lu_filename.bind("<Button-1>", self.on_click)  # Bind left mouse button click event
+            self.favorite_button.pack(side='right', padx=5, anchor='e')
 
-        # Pack the date label with proper alignment
-        self.lu_date_mod = ttk.Label(
-            master=self,
-            text=self.ftype,
-            font=("Arial", text_size)
-        )
-        self.lu_date_mod.pack(side='right', padx=(0, 65), pady=5, anchor='e')
+            # Create a label for the filename
+            self.lu_filename = ttk.Label(
+                master=self,
+                text=self.fname,
+                font=("Arial", text_size),
+                cursor="hand2"  # Change cursor to hand2 to indicate it's clickable
+            )
+            self.lu_filename.pack(side='left', padx=(0, 5), pady=5, anchor='w')
+            self.lu_filename.bind("<Button-1>", self.on_click)  # Bind left mouse button click event
+
+            # Pack the date label with proper alignment
+            self.lu_date_mod = ttk.Label(
+                master=self,
+                text=self.ftype,
+                font=("Arial", text_size)
+            )
+            self.lu_date_mod.pack(side='right', padx=(0, 65), pady=5, anchor='e')
+
+        except Exception as e:
+            print("An error occurred in FavoritesFileFrame initialization:", e)
 
     def toggle_favorite(self):
-        current_value = self.check_favorite.get()
-        new_value = "on" if current_value == "off" else "off"
-        self.check_favorite.set(new_value)
+        """
+        Toggle the favorite status of the file/folder.
+        """
+        try:
+            current_value = self.check_favorite.get()
+            new_value = "on" if current_value == "off" else "off"
+            self.check_favorite.set(new_value)
 
-        # Change the button icon based on the new value
-        new_icon_path = "../GUI/file_icons/star_icon_light.png" if new_value == "on" else "../GUI/file_icons/star_icon.png"
-        new_icon = CTkImage(Image.open(new_icon_path), size=(20, 20))
-        self.favorite_button.configure(image=new_icon)
+            # Change the button icon based on the new value
+            new_icon_path = "../GUI/file_icons/star_icon_light.png" if new_value == "on" else "../GUI/file_icons/star_icon.png"
+            new_icon = CTkImage(Image.open(new_icon_path), size=(20, 20))
+            self.favorite_button.configure(image=new_icon)
 
-        # Notify the HomePage when the favorite button is pressed
-        if self.favorite_callback:
-            self.favorite_callback(self, new_value)
+            # Notify the HomePage when the favorite button is pressed
+            if self.favorite_callback:
+                self.favorite_callback(self, new_value)
+
+        except Exception as e:
+            print("An error occurred while toggling favorite status:", e)
 
     def on_click(self, event):
-        if self.is_folder and self.click_callback:
-            self.click_callback(self.fname, self.ftype)
-        else:
-            self.check_var.set("on")
+        """
+        Handle the click event on the file/folder entry.
+        """
+        try:
+            if self.is_folder and self.click_callback:
+                self.click_callback(self.fname, self.ftype)
+            else:
+                self.check_var.set("on")
+
+        except Exception as e:
+            print("An error occurred while handling click event:", e)
 
     def get_checkvar(self) -> bool:
+        """
+        Get the check variable indicating whether the entry is selected.
+
+        Returns:
+        - bool: True if selected, False otherwise.
+        """
         return self.check_var.get() == "on"
 
     def get_filename(self):
+        """
+        Get the filename.
+
+        Returns:
+        - str: The filename.
+        """
         return self.fname
 
     def get_ftype(self):
+        """
+        Get the file type.
+
+        Returns:
+        - str: The file type.
+        """
         return self.ftype
 
     def set_filename(self, fname):
-        self.fname = fname
-        self.lu_filename.configure(text=fname)
+        """
+        Set the filename.
+
+        Parameters:
+        - fname (str): The new filename.
+        """
+        try:
+            self.fname = fname
+            self.lu_filename.configure(text=fname)
+
+        except Exception as e:
+            print("An error occurred while setting filename:", e)
 
     def uncheck(self):
-        self.check_var.set("off")
+        """
+        Uncheck the entry.
+        """
+        try:
+            self.check_var.set("off")
+
+        except Exception as e:
+            print("An error occurred while unchecking entry:", e)
 
     def kill_frame(self):
-        self.destroy()
-
+        """
+        Destroy the frame.
+        """
+        try:
+            self.destroy()
+        except Exception as e:
+            print("An error occurred while destroying the frame:", e)
     def is_image(self, fname):
         image_extensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp']
         return any(fname.lower().endswith(ext) for ext in image_extensions)
