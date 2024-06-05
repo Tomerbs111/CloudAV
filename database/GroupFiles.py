@@ -184,6 +184,7 @@ class GroupFiles:
             self.conn.commit()
         except Exception as e:
             print("An error occurred while deleting the file:", e)
+
     def get_file_info(self, group_name: str, name: str, folder: str):
         """
         Retrieve information about a file.
@@ -223,6 +224,24 @@ class GroupFiles:
             return result[0]
         except Exception as e:
             print("An error occurred while retrieving file data:", e)
+
+    def rename_file(self, group_name: str, old_name: str, new_name: str, folder: str):
+        """
+        Rename a file within a group.
+
+        Parameters:
+            - group_name (str): Name of the group.
+            - old_name (str): Old name of the file.
+            - new_name (str): New name of the file.
+            - folder (str): Folder containing the file.
+        """
+        try:
+            # Update the file name in the database
+            self._execute_query(self.RENAME_FILE_QUERY,
+                                (new_name, group_name, self.owner_id, old_name, folder))
+            self.conn.commit()
+        except Exception as e:
+            print("An error occurred while renaming the file:", e)
 
     def rename_folder_files(self, group_name: str, old_folder_name: str, new_folder_name: str):
         """
@@ -335,6 +354,7 @@ class GroupFiles:
         Close the database connection.
         """
         self.conn.close()
+
 
 if __name__ == '__main__':
     asf = GroupFiles('jasaxaf511@fincainc.com')

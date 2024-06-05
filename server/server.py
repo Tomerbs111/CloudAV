@@ -524,7 +524,7 @@ class Server:
             if isinstance(db_manager, GroupFiles):
                 for individual_file in select_file_names_lst:
                     file_data = \
-                        db_manager.get_file_data(self.get_group_name(client_socket), individual_file, folder_name)[0]
+                        db_manager.get_file_data(self.get_group_name(client_socket), individual_file, folder_name)
                     file_data_name_dict[individual_file] = file_data
 
             elif isinstance(db_manager, UserFiles):
@@ -634,6 +634,7 @@ class Server:
         except Exception as e:
             print(f"Error in rename file action: {e}")
             client_socket.close()
+
 
     def handle_favorite_file_action(self, client_socket, db_manager, favorite_manager, favorite_data):
         try:

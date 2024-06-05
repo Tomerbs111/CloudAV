@@ -561,7 +561,7 @@ class GroupsPage(ttk.Frame):
                     print("Folder name:", folder_name)
                     receive_thread = threading.Thread(
                         target=self.group_communicator.handle_download_folder_request_group,
-                        args=(folder_name, self.save_path))
+                        args=(folder_name, self.save_path, self.get_current_folder()))
                     receive_thread.start()
         else:
             # Otherwise, handle file downloads

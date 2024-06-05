@@ -703,14 +703,14 @@ class GroupCommunication:
 
             print(f"File '{file_name}' unfavorited.")
 
-    def handle_download_folder_request_group(self, folder_name, save_path):
+    def handle_download_folder_request_group(self, folder_name, save_path, file_folder):
         """
         A function to handle download folder request group.
 
         :param folder_name: The name of the folder to download.
         :param save_path: The path to save the downloaded folder.
         """
-        data_dict = {"FLAG": "<RECV_FOLDER>", "DATA": folder_name}
+        data_dict = {"FLAG": "<RECV_FOLDER>", "DATA": [folder_name, file_folder]}
         self.send_data(self.client_socket, pickle.dumps(data_dict))
 
     def handle_presaved_files_group(self, file_folder):
@@ -784,7 +784,7 @@ class GroupCommunication:
         self.send_data(self.client_socket, pickle.dumps(data_dict))
 
 # ------------Client setup------------
-HOST = '127.0.0.1' #'192.168.1.201'
+HOST = '192.168.1.201'
 PORT = 40301
 
 
