@@ -303,9 +303,9 @@ class Page(ttk.Frame):
             folder_name = "New Folder"
         check_dup = self.current_frame.handle_duplicate_names(folder_name)
         if check_dup != folder_name:
-            self.current_frame.handle_add_new_folder_request(check_dup + " <folder>", size=0)
+            self.current_frame.handle_add_new_folder_request(check_dup + " <folder>")
         else:
-            self.current_frame.handle_add_new_folder_request(folder_name + " <folder>", size=0)
+            self.current_frame.handle_add_new_folder_request(folder_name + " <folder>")
         self.add_folder_dialog.destroy()
 
     def handle_send_file_request(self):

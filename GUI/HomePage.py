@@ -334,9 +334,9 @@ class HomePage(ttk.Frame):
 
         return short_filename, formatted_file_size, short_file_date
 
-    def handle_add_new_folder_request(self, folder_name, size):
+    def handle_add_new_folder_request(self, folder_name):
         real_folder_name = folder_name.replace(" <folder>", "")
-        folder_size = size
+        folder_size = 0
         folder_date = datetime.datetime.now()
         folder_folder = self.get_current_folder()
 
