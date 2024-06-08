@@ -293,53 +293,72 @@ class RegistrationApp(ttk.Frame):
                 self.after(1000, lambda: self.switch_frame("HomePage", self.client_communicator))
 
     def l_when_submit(self):
-        if self.twofapage_open:
-            # If open, don't proceed with login
-            return
-        checksum = 0
+        while True:
+            if self.twofapage_open:
+                # If open, don't proceed with login
+                return
+            checksum = 0
 
-        u_email = self.email_entry.get()
-        if len(u_email) > 0 and re.fullmatch(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b', u_email):
-            self.ans_email.configure(text="Email is valid.", bootstyle="success")
-            checksum += 1
-        else:
-            self.ans_email.configure(text="Invalid email. Please enter a valid email.", bootstyle="danger")
-            checksum -= 1 if checksum != 0 else 0
-            self.attempts += 1
-
-        u_password = self.password_entry.get()
-        if len(u_password) >= 8:
-            self.ans_password.configure(text="Password is valid", bootstyle="success")
-            checksum += 1
-        else:
-            self.ans_password.configure(text="Invalid password. must be 8 characters or longer.",
-                                        bootstyle="danger")
-            checksum -= 1 if checksum != 0 else 0
-            self.attempts += 1
-
-        if checksum == 2:
-            self.server_ans = self.client_communicator.handle_client_login(self.attempt_type, u_email, u_password)
-
-            if self.server_ans == "<NO_EMAIL_EXISTS>":
-                self.ans_email.configure(text="Login failed. No accounts under the provided email.",
-                                         bootstyle="danger")
-                self.ans_password.configure(text="Login failed. Password doesn't match the provided email.",
-                                            bootstyle="danger")
-            elif self.server_ans == "<WRONG_PASSWORD>":
-                self.ans_password.configure(text="Login failed. Password doesn't match the provided email.",
-                                            bootstyle="danger")
+            u_email = self.email_entry.get()
+            if len(u_email) > 0 and re.fullmatch(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b', u_email):
+                self.ans_email.configure(text="Email is valid.", bootstyle="success")
+                checksum += 1
             else:
-                self.twofapage = TwoFactorAuthentication(self, self.client_communicator)
-                self.twofapage_open = True
-                self.twofapage.focus_set()
-                self.twofapage.wait_window()
-                identifier = self.twofapage.identifier
+                self.ans_email.configure(text="Invalid email. Please enter a valid email.", bootstyle="danger")
+                checksum -= 1 if checksum != 0 else 0
+                self.attempts += 1
 
-                if identifier:
-                    self.l_confirm.configure(text=f"Welcome back {identifier}", bootstyle="success")
-                    self.set_info(identifier, u_email)
-                    self.after(1000, lambda: self.switch_frame("HomePage", self.client_communicator))
+            u_password = self.password_entry.get()
+            if len(u_password) >= 8:
+                self.ans_password.configure(text="Password is valid", bootstyle="success")
+                checksum += 1
+            else:
+                self.ans_password.configure(text="Invalid password. must be 8 characters or longer.",
+                                            bootstyle="danger")
+                checksum -= 1 if checksum != 0 else 0
+                self.attempts += 1
 
+            if checksum == 2:
+                self.server_ans = self.client_communicator.handle_client_login(self.attempt_type, u_email, u_password)
+
+                if self.server_ans == "<NO_EMAIL_EXISTS>":
+                    self.ans_email.configure(text="Login failed. No accounts under the provided email.",
+                                             bootstyle="danger")
+                    self.ans_password.configure(text="Login failed. Password doesn't match the provided email.",
+                                                bootstyle="danger")
+                    break
+                elif self.server_ans == "<WRONG_PASSWORD>":
+                    self.ans_password.configure(text="Login failed. Password doesn't match the provided email.",
+                                                bootstyle="danger")
+                    break
+                else:
+                    self.twofapage = TwoFactorAuthentication(self, self.client_communicator)
+                    self.twofapage_open = True
+                    self.twofapage.focus_set()
+                    self.twofapage.wait_window()
+                    identifier = self.twofapage.identifier
+
+                    if identifier:
+                        self.l_confirm.configure(text=f"Welcome back {identifier}", bootstyle="success")
+                        self.set_info(identifier, u_email)
+                        self.after(1000, lambda: self.switch_frame("HomePage", self.client_communicator))
+                        break
+                    else:
+                        self.l_confirm.configure(text="2FA process was not completed.", bootstyle="danger")
+                        self.reset_form()
+                        # Continue the loop to restart the login process
+                        continue
+            else:
+                break
+
+    def reset_form(self):
+        # Clear the email and password entries
+        self.email_entry.delete(0, 'end')
+        self.password_entry.delete(0, 'end')
+        self.ans_email.configure(text="")
+        self.ans_password.configure(text="")
+        self.l_confirm.configure(text="")
+        self.twofapage_open = False
 
 class TwoFactorAuthentication(ttk.Toplevel):
     def __init__(self, master, client_communicator):
