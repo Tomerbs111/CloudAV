@@ -13,61 +13,135 @@ class GroupFileFrame(ttk.Frame):
     def __init__(self, master, file_name, file_size, file_date, file_owner, is_folder=False, click_callback=None,
                  favorite_callback=None):
         super().__init__(master)
-        self.file_name = file_name
-        self.file_size = file_size
-        self.file_date = file_date
-        self.file_owner = file_owner
-        self.is_folder = is_folder
-        self.click_callback = click_callback  # Callback function for click event
-        self.favorite_callback = favorite_callback
+        self._file_name = file_name
+        self._file_size = file_size
+        self._file_date = file_date
+        self._file_owner = file_owner
+        self._is_folder = is_folder
+        self._click_callback = click_callback  # Callback function for click event
+        self._favorite_callback = favorite_callback
 
-        self.check_var = StringVar(value="off")
-        self.mark_for_action = ttk.Checkbutton(self, text="",
-                                               variable=self.check_var, onvalue="on", offvalue="off")
+        self._check_var = StringVar(value="off")
+        self._check_favorite = StringVar(value="off")
+
+        self.setup_ui()
+
+    @property
+    def file_name(self):
+        return self._file_name
+
+    @file_name.setter
+    def file_name(self, value):
+        self._file_name = value
+        if hasattr(self, "lu_filename"):
+            self.lu_filename.configure(text=value)
+
+    @property
+    def file_size(self):
+        return self._file_size
+
+    @file_size.setter
+    def file_size(self, value):
+        self._file_size = value
+        if hasattr(self, "lu_size"):
+            self.lu_size.configure(text=value)
+
+    @property
+    def file_date(self):
+        return self._file_date
+
+    @file_date.setter
+    def file_date(self, value):
+        self._file_date = value
+        if hasattr(self, "lu_date_mod"):
+            self.lu_date_mod.configure(text=value)
+
+    @property
+    def file_owner(self):
+        return self._file_owner
+
+    @file_owner.setter
+    def file_owner(self, value):
+        self._file_owner = value
+        if hasattr(self, "lu_owner"):
+            self.lu_owner.configure(text=value)
+
+    @property
+    def is_folder(self):
+        return self._is_folder
+
+    @is_folder.setter
+    def is_folder(self, value):
+        self._is_folder = value
+
+    @property
+    def click_callback(self):
+        return self._click_callback
+
+    @click_callback.setter
+    def click_callback(self, value):
+        self._click_callback = value
+
+    @property
+    def favorite_callback(self):
+        return self._favorite_callback
+
+    @favorite_callback.setter
+    def favorite_callback(self, value):
+        self._favorite_callback = value
+
+    def setup_ui(self):
+        self.create_checkbutton()
+        self.create_icon()
+        self.create_filename_label()
+        self.create_favorite_button()
+        self.create_size_label()
+        self.create_date_label()
+        self.create_owner_label()
+
+    # Other methods remain the same
+
+    def create_checkbutton(self):
+        self.mark_for_action = ttk.Checkbutton(self, text="", variable=self._check_var, onvalue="on", offvalue="off")
         self.mark_for_action.pack(side='left', padx=5)
 
-        # Set the default icon path
-        if self.is_folder:
-            icon_path = "../GUI/file_icons/folder_icon.png"  # Set folder icon path
-        else:
-            icon_path = "../GUI/file_icons/other_file_icon.png"
-
-            # Check file type and set icon accordingly
-        if not self.is_folder:
-            if self.is_image(self.file_name):
-                icon_path = "../GUI/file_icons/image_file_icon.png"
-            elif self.is_document(self.file_name):
-                icon_path = "../GUI/file_icons/word_file_icon.png"
-            elif self.is_pdf(self.file_name):
-                icon_path = "../GUI/file_icons/pdf_file_icon.png"
-            elif self.is_powerpoint(self.file_name):
-                icon_path = "../GUI/file_icons/powerpoint_file_icon.png"
-            elif self.is_text(self.file_name):
-                icon_path = "../GUI/file_icons/text_file_icon.png"
-            elif self.is_zip(self.file_name):
-                icon_path = "../GUI/file_icons/zip_file_icon.png"
-            elif self.is_excel(self.file_name):
-                icon_path = "../GUI/file_icons/excel_file_icon.png"
-            elif self.is_video(self.file_name):
-                icon_path = "../GUI/file_icons/video_file_icon.png"
-            elif self.is_code(self.file_name):
-                icon_path = "../GUI/file_icons/code_file_icon.png"
-
-        # Load the icon image
-        icon_image = Image.open(icon_path)
-        icon_image = icon_image.resize((25, 25))
-
+    def create_icon(self):
+        icon_path = self.get_icon_path()
+        icon_image = Image.open(icon_path).resize((25, 25))
         tk_icon_image = ImageTk.PhotoImage(icon_image)
 
-        # Create a label to display the icon
         icon_label = ttk.Label(master=self, image=tk_icon_image)
         icon_label.image = tk_icon_image
         icon_label.pack(side='left', padx=(0, 5), pady=5)
 
+    def get_icon_path(self):
+        if self.is_folder:
+            return "../GUI/file_icons/folder_icon.png"
+
+        icon_map = {
+            self.is_image: "../GUI/file_icons/image_file_icon.png",
+            self.is_document: "../GUI/file_icons/word_file_icon.png",
+            self.is_pdf: "../GUI/file_icons/pdf_file_icon.png",
+            self.is_powerpoint: "../GUI/file_icons/powerpoint_file_icon.png",
+            self.is_text: "../GUI/file_icons/text_file_icon.png",
+            self.is_zip: "../GUI/file_icons/zip_file_icon.png",
+            self.is_excel: "../GUI/file_icons/excel_file_icon.png",
+            self.is_video: "../GUI/file_icons/video_file_icon.png",
+            self.is_code: "../GUI/file_icons/code_file_icon.png",
+        }
+        for check_function, path in icon_map.items():
+            if check_function(self.file_name):
+                return path
+
+        return "../GUI/file_icons/other_file_icon.png"
+
+    def create_filename_label(self):
         text_size = 12
+        self.lu_filename = ttk.Label(master=self, text=self.file_name, font=("Arial", text_size), cursor="hand2")
+        self.lu_filename.pack(side='left', padx=(0, 5), pady=5, anchor='w')
+        self.lu_filename.bind("<Button-1>", self.on_click)  # Bind left mouse button click event
 
-        self.check_favorite = StringVar(value="off")
-
+    def create_favorite_button(self):
         self.favorite_button = CTkButton(
             master=self,
             image=CTkImage(Image.open("../GUI/file_icons/star_icon.png"), size=(20, 20)),
@@ -77,47 +151,27 @@ class GroupFileFrame(ttk.Frame):
             fg_color='transparent',
             command=self.toggle_favorite  # Assign the command to the function
         )
-
         self.favorite_button.pack(side='right', padx=5, anchor='e')
 
-        # Create a label for the filename
-        self.lu_filename = ttk.Label(
-            master=self,
-            text=self.file_name,
-            font=("Arial", text_size),
-            cursor="hand2"  # Change cursor to hand2 to indicate it's clickable
-        )
-        self.lu_filename.pack(side='left', padx=(0, 5), pady=5, anchor='w')
-        self.lu_filename.bind("<Button-1>", self.on_click)  # Bind left mouse button click event
-
-        # Pack the size label with proper alignment
-        self.lu_size = ttk.Label(
-            master=self,
-            text=self.file_size,
-            font=("Arial", text_size)
-        )
+    def create_size_label(self):
+        text_size = 12
+        self.lu_size = ttk.Label(master=self, text=self.file_size, font=("Arial", text_size))
         self.lu_size.pack(side='right', padx=(0, 27), pady=5, anchor='e')  # Adjust padx as needed
 
-        # Pack the date label with proper alignment
-        self.lu_date_mod = ttk.Label(
-            master=self,
-            text=self.file_date,
-            font=("Arial", text_size)
-        )
+    def create_date_label(self):
+        text_size = 12
+        self.lu_date_mod = ttk.Label(master=self, text=self.file_date, font=("Arial", text_size))
         self.lu_date_mod.pack(side='right', padx=(0, 65), pady=5, anchor='e')
 
-        # Pack the owner label with proper alignment
-        self.lu_owner = ttk.Label(
-            master=self,
-            text=self.file_owner,
-            font=("Arial", text_size)
-        )
+    def create_owner_label(self):
+        text_size = 12
+        self.lu_owner = ttk.Label(master=self, text=self.file_owner, font=("Arial", text_size))
         self.lu_owner.pack(side='right', padx=(0, 65), pady=5, anchor='e')
 
     def toggle_favorite(self):
-        current_value = self.check_favorite.get()
+        current_value = self._check_favorite.get()
         new_value = "on" if current_value == "off" else "off"
-        self.check_favorite.set(new_value)
+        self._check_favorite.set(new_value)
 
         # Change the button icon based on the new value
         new_icon_path = "../GUI/file_icons/star_icon_light.png" if new_value == "on" else "../GUI/file_icons/star_icon.png"
@@ -132,10 +186,10 @@ class GroupFileFrame(ttk.Frame):
         if self.is_folder and self.click_callback:
             self.click_callback(self.file_name)
         else:
-            self.check_var.set("on")
+            self._check_var.set("on")
 
     def get_checkvar(self) -> bool:
-        return self.check_var.get() == "on"
+        return self._check_var.get() == "on"
 
     def get_filename(self):
         return self.file_name
@@ -145,7 +199,7 @@ class GroupFileFrame(ttk.Frame):
         self.lu_filename.configure(text=fname)
 
     def uncheck(self):
-        self.check_var.set("off")
+        self._check_var.set("off")
 
     def kill_frame(self):
         self.destroy()
@@ -190,13 +244,13 @@ class GroupFileFrame(ttk.Frame):
 class GroupsPage(ttk.Frame):
     def __init__(self, parent, switch_frame, group_communicator, group_name, permissions, admin):
         super().__init__(parent)
-        self.owner = "You"
         self.parent_app = parent
         self.switch_frame = switch_frame
         self.group_name = group_name
         self.group_communicator = group_communicator
 
         self.permissions = self.set_permissions(permissions)
+        self.process_running = False
         self.admin = admin
         self.is_admin = False
 
@@ -221,6 +275,8 @@ class GroupsPage(ttk.Frame):
         self.room_data_event = threading.Event()
         self.users_data_event = threading.Event()
         self.search_data_event = threading.Event()
+
+        self.presenting_files_event = threading.Event()
 
     def set_permissions(self, permissions):
         if type(permissions) == list:
@@ -364,42 +420,29 @@ class GroupsPage(ttk.Frame):
         return short_file_date
 
     def handle_favorite_toggle(self, file_frame, new_value):
-        file_name = file_frame.get_filename()
-        if file_frame.is_folder:
-            file_name = file_name + " <folder>"
-        if new_value == "on":
-            favorite_thread = threading.Thread(
-                target=self.group_communicator.handle_set_favorite_request_group,
-                args=(file_name, new_value, self.group_name))
-            favorite_thread.start()
-        else:
-            unfavorite_thread = threading.Thread(
-                target=self.group_communicator.handle_set_favorite_request_group,
-                args=(file_name, new_value, self.group_name))
-            unfavorite_thread.start()
+        try:
+            self.process_running = True
+            file_name = file_frame.get_filename()
+            if file_frame.is_folder:
+                file_name = file_name + " <folder>"
+            if new_value == "on":
+                favorite_thread = threading.Thread(
+                    target=self.group_communicator.handle_set_favorite_request_group,
+                    args=(file_name, new_value, self.group_name))
+                favorite_thread.start()
+            else:
+                unfavorite_thread = threading.Thread(
+                    target=self.group_communicator.handle_set_favorite_request_group,
+                    args=(file_name, new_value, self.group_name))
+                unfavorite_thread.start()
+        finally:
+            self.process_running = False
 
     def set_frame_properties_for_display(self, file_name, file_bytes, file_uploadate: datetime):
         short_filename = os.path.basename(file_name)
-
         formatted_file_size = self.set_size_format(file_bytes)
         short_file_date = self.set_date_format(file_uploadate)
-
         return short_filename, formatted_file_size, short_file_date
-
-    def handle_add_new_folder_request(self, folder_name, size):
-        real_folder_name = folder_name.replace(" <folder>", "")
-        folder_date = datetime.datetime.now()
-        folder_size = "0"
-        folder_folder = self.get_current_folder()
-
-        formatted_folder_date = self.set_date_format(folder_date)
-
-        add_folder_thread = threading.Thread(target=self.group_communicator.handle_add_new_folder_request,
-                                             args=(
-                                                 folder_name, folder_size, folder_date, folder_folder, self.group_name))
-        add_folder_thread.start()
-
-        self.add_folder_frame(real_folder_name, folder_size, formatted_folder_date, self.owner, 0)
 
     def add_folder_frame(self, real_folder_name, folder_size, folder_date, group_folder_owner, favorite):
         file_frame = GroupFileFrame(self.f_file_list, real_folder_name, folder_size, folder_date, group_folder_owner,
@@ -410,46 +453,92 @@ class GroupsPage(ttk.Frame):
         self.file_frame_counter += 1
 
         if favorite == 1:
-            file_frame.favorite_button.configure(
-                image=CTkImage(Image.open("../GUI/file_icons/star_icon_light.png"), size=(20, 20)))
-            file_frame.check_favorite.set("on")
+            file_frame.toggle_favorite()
+
+    def add_file_frame(self, group_file_name, group_file_size, group_file_date, group_file_owner, favorite):
+        file_frame = GroupFileFrame(self.f_file_list, group_file_name, group_file_size, group_file_date,
+                                    group_file_owner, favorite_callback=self.handle_favorite_toggle)
+
+        file_frame.pack(expand=True, fill='x', side='top')
+        self.group_file_frames.append(file_frame)
+        self.file_frame_counter += 1
+
+        if favorite == 1:
+            file_frame.toggle_favorite()
+
+    def get_file_name_to_rename(self, received_data):
+        old_name, new_name, folder = received_data
+        for file_frame in self.group_file_frames:
+            filename = file_frame.get_filename()
+            if filename == old_name:
+                file_frame.set_filename(new_name)
+                file_frame.update_idletasks()
+
+    def handle_received_item(self, item, current_folder):
+        owner, name, size, date, group_name, folder, favorite = item
+        formatted_file_date = self.set_date_format(date)
+        formatted_file_size = self.set_size_format(size)
+        if folder == current_folder:
+            if " <folder>" in name:
+                formatted_file_size = str(size) + " items"
+                self.add_folder_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner,
+                                      favorite)
+            else:
+                self.add_file_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner,
+                                    favorite)
 
     def folder_clicked(self, folder_name):
-        print(f"Folder clicked: {folder_name}")
-        # Delete all existing file frames
-        for file_frame in self.group_file_frames:
-            file_frame.destroy()
-        # Clear the file frames list
-        self.group_file_frames.clear()
-        # Add folder button to the list of clicked folders
-        folder_button = CTkButton(self.folder_frame, anchor='w', text=folder_name, fg_color='transparent',
-                                  font=('Arial Bold', 20),
-                                  command=lambda: self.focus_on_folder(folder_name))
-        folder_button.pack(side='left', anchor='w', pady=3)
-        self.clicked_folders.append(folder_button)
-        self.update_current_folder(folder_name)
+        try:
+            if self.presenting_files_event.is_set():
+                print("A process is already running. Please wait.")
+                return
+            self.presenting_files_event.set()
 
-        print(f"current folder: {self.current_folder}")
+            print(f"Folder clicked: {folder_name}")
+            # Delete all existing file frames
+            for file_frame in self.group_file_frames:
+                file_frame.destroy()
+            # Clear the file frames list
+            self.group_file_frames.clear()
+            # Add folder button to the list of clicked folders
+            folder_button = CTkButton(self.folder_frame, anchor='w', text=folder_name, fg_color='transparent',
+                                      font=('Arial Bold', 20),
+                                      command=lambda: self.focus_on_folder(folder_name))
+            folder_button.pack(side='left', anchor='w', pady=3)
+            self.clicked_folders.append(folder_button)
+            self.update_current_folder(folder_name)
 
-        self.group_communicator.handle_presaved_files_group(self.get_current_folder())
+            print(f"current folder: {self.current_folder}")
+
+            self.group_communicator.handle_presaved_files_group(self.get_current_folder())
+        finally:
+            self.presenting_files_event.clear()
 
     def focus_on_folder(self, folder_name):
-        for folder_button in self.clicked_folders:
-            if folder_button.cget('text') == folder_name:
-                index_of_folder = self.clicked_folders.index(folder_button)
-                for i in range(index_of_folder + 1, len(self.clicked_folders)):
-                    # Destroy each button
-                    self.clicked_folders[i].destroy()
-        # Clear existing file frames
-        for file_frame in self.group_file_frames:
-            file_frame.destroy()
-        self.group_file_frames.clear()
+        try:
+            if self.presenting_files_event.is_set():
+                print("A process is already running. Please wait.")
+                return
+            self.presenting_files_event.set()
 
-        # Update the current folder
-        self.update_current_folder(folder_name)
+            for folder_button in self.clicked_folders:
+                if folder_button.cget('text') == folder_name:
+                    index_of_folder = self.clicked_folders.index(folder_button)
+                    for i in range(index_of_folder + 1, len(self.clicked_folders)):
+                        # Destroy each button
+                        self.clicked_folders[i].destroy()
+            # Clear existing file frames
+            for file_frame in self.group_file_frames:
+                file_frame.destroy()
+            self.group_file_frames.clear()
 
-        # run handle_presaved_files_group, answer will be picked by handle_broadcast_requests
-        self.group_communicator.handle_presaved_files_group(self.get_current_folder())
+            # Update the current folder
+            self.update_current_folder(folder_name)
+
+            # run handle_presaved_files_group, answer will be picked by handle_broadcast_requests
+            self.group_communicator.handle_presaved_files_group(self.get_current_folder())
+        finally:
+            self.presenting_files_event.clear()
 
     def get_checked_file_frames(self):
         checked_file_frames_list = []
@@ -468,145 +557,178 @@ class GroupsPage(ttk.Frame):
 
         self.file_frame_counter = len(self.group_file_frames)
 
-    def add_file_frame(self, group_file_name, group_file_size, group_file_date, group_file_owner, favorite):
-        file_frame = GroupFileFrame(self.f_file_list, group_file_name, group_file_size, group_file_date,
-                                    group_file_owner, favorite_callback=self.handle_favorite_toggle)
-
-        file_frame.pack(expand=True, fill='x', side='top')
-        self.group_file_frames.append(file_frame)
-        self.file_frame_counter += 1
-
-        if favorite == 1:
-            file_frame.favorite_button.configure(
-                image=CTkImage(Image.open("../GUI/file_icons/star_icon_light.png"), size=(20, 20)))
-            file_frame.check_favorite.set("on")
-
-    def get_file_name_to_rename(self, received_data):
-        old_name, new_name, folder = received_data
-        for file_frame in self.group_file_frames:
-            filename = file_frame.get_filename()
-            if filename == old_name:
-                file_frame.set_filename(new_name)
-                file_frame.update_idletasks()
-
     def handle_presenting_presaved_files(self, narf_answer):
-        if narf_answer == "<NO_DATA>":
-            return
-        for individual_file in narf_answer:
-            owner, name, size, date, group_name, folder, favorite = individual_file
-            if folder == self.current_folder:
-                formatted_file_date = self.set_date_format(date)
-                formatted_file_size = self.set_size_format(size)
-            if " <folder>" in name:
-                formatted_file_size = str(size) + " items"
-                self.add_folder_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner,
-                                      favorite)
-            else:
-                self.add_file_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner,
-                                    favorite)
+        try:
+            self.presenting_files_event.set()  # Set the event before handling presaved files
+            if narf_answer == "<NO_DATA>":
+                return
+            for individual_file in narf_answer:
+                self.handle_received_item(individual_file, self.current_folder)
+        finally:
+            self.presenting_files_event.clear()
+
+    def handle_add_new_folder_request(self, folder_name):
+        try:
+            if self.presenting_files_event.is_set():
+                print("A process is already running. Please wait.")
+                return
+            self.presenting_files_event.set()
+
+            real_folder_name = folder_name.replace(" <folder>", "")
+            folder_date = datetime.datetime.now()
+            folder_size = "0"
+            folder_folder = self.get_current_folder()
+
+            formatted_folder_date = self.set_date_format(folder_date)
+
+            add_folder_thread = threading.Thread(target=self.group_communicator.handle_add_new_folder_request,
+                                                 args=(
+                                                     folder_name, folder_size, folder_date, folder_folder,
+                                                     self.group_name))
+            add_folder_thread.start()
+
+            self.add_folder_frame(real_folder_name, folder_size, formatted_folder_date, "You", 0)
+        finally:
+            self.presenting_files_event.clear()
 
     def handle_send_file_request(self):
-        if not self.can_upload() and self.is_admin is False:
-            print("You are not authorized to upload data.")
-            tk.messagebox.showinfo(title="Error", message="You are not authorized to upload data.")
-            return
-        filetypes = (
-            ('All files', '*.*'),
-            ('text files', '*.txt'),
-            ('All files', '*.*')
-        )
+        try:
+            if self.presenting_files_event.is_set():
+                print("A process is already running. Please wait.")
+                return
+            self.presenting_files_event.set()
 
-        file_name = fd.askopenfilename(
-            title='Select a file',
-            initialdir='/',
-            filetypes=filetypes)
+            if not self.can_upload() and self.is_admin is False:
+                print("You are not authorized to upload data.")
+                tk.messagebox.showinfo(title="Error", message="You are not authorized to upload data.")
+                return
+            filetypes = (
+                ('All files', '*.*'),
+                ('text files', '*.txt'),
+                ('All files', '*.*')
+            )
 
-        file_bytes = os.path.getsize(file_name)
-        file_date = datetime.datetime.now()
+            file_name = fd.askopenfilename(
+                title='Select a file',
+                initialdir='/',
+                filetypes=filetypes)
 
-        short_filename, formatted_file_size, short_file_date = \
-            self.set_frame_properties_for_display(file_name, file_bytes, file_date)
+            file_bytes = os.path.getsize(file_name)
+            file_date = datetime.datetime.now()
 
-        send_file_thread = threading.Thread(
-            target=self.group_communicator.handle_send_file_request,
-            args=(file_name, short_filename, file_date, file_bytes, self.get_current_folder(), True)
-        )
-        send_file_thread.start()
+            short_filename, formatted_file_size, short_file_date = \
+                self.set_frame_properties_for_display(file_name, file_bytes, file_date)
 
-        self.add_file_frame(short_filename, formatted_file_size, short_file_date, group_file_owner="self", favorite=0)
+            send_file_thread = threading.Thread(
+                target=self.group_communicator.handle_send_file_request,
+                args=(file_name, short_filename, file_date, file_bytes, self.get_current_folder(), True)
+            )
+            send_file_thread.start()
 
-    import threading
+            self.add_file_frame(short_filename, formatted_file_size, short_file_date, group_file_owner="self",
+                                favorite=0)
+        finally:
+            self.presenting_files_event.clear()
 
     def handle_download_request_group(self):
-        if not self.can_download() and self.is_admin is False:
-            print("You are not authorized to download data.")
-            tk.messagebox.showinfo(title="Error", message="You are not authorized to download data.")
-            return
+        try:
+            if self.presenting_files_event.is_set():
+                print("A process is already running. Please wait.")
+                return
+            self.presenting_files_event.set()
 
-        select_file_frames = self.get_checked_file_frames()
-        select_file_names_lst = [file_frame.get_filename() for file_frame in select_file_frames]
+            if not self.can_download() and self.is_admin is False:
+                print("You are not authorized to download data.")
+                tk.messagebox.showinfo(title="Error", message="You are not authorized to download data.")
+                return
 
-        # Check if any selected file is a folder
-        is_folder_selected = any(file_frame.is_folder for file_frame in select_file_frames)
+            select_file_frames = self.get_checked_file_frames()
+            select_file_names_lst = [file_frame.get_filename() for file_frame in select_file_frames]
 
-        print(f"select_file_frames: {select_file_frames}")
-        print(f"select_file_names_lst: {select_file_names_lst}")
-        print(f"self.get_current_folder(): {self.get_current_folder()}")
+            # Check if any selected file is a folder
+            is_folder_selected = any(file_frame.is_folder for file_frame in select_file_frames)
 
-        if is_folder_selected:
-            # If any selected file is a folder, handle folder downloads
-            for file_frame in select_file_frames:
-                if file_frame.is_folder:
-                    folder_name = file_frame.get_filename()
-                    print("Folder name:", folder_name)
-                    receive_thread = threading.Thread(
-                        target=self.group_communicator.handle_download_folder_request_group,
-                        args=(folder_name, self.save_path, self.get_current_folder()))
-                    receive_thread.start()
-        else:
-            # Otherwise, handle file downloads
-            receive_thread = threading.Thread(
-                target=self.group_communicator.handle_download_request_group,
-                args=(select_file_names_lst, self.save_path, self.get_current_folder()))
-            receive_thread.start()
+            print(f"select_file_frames: {select_file_frames}")
+            print(f"select_file_names_lst: {select_file_names_lst}")
+            print(f"self.get_current_folder(): {self.get_current_folder()}")
 
-    def handle_saving_broadcasted_files(self, file_data_name_dict, save_path):
-        for indiv_filename, indiv_filebytes in file_data_name_dict.items():
-            file_path = os.path.join(save_path, indiv_filename)
-            with open(file_path, "wb") as file:
-                file.write(indiv_filebytes)
-                print(f"File '{indiv_filename}' received successfully.")
+            if is_folder_selected:
+                # If any selected file is a folder, handle folder downloads
+                for file_frame in select_file_frames:
+                    if file_frame.is_folder:
+                        folder_name = file_frame.get_filename()
+                        print("Folder name:", folder_name)
+                        receive_thread = threading.Thread(
+                            target=self.group_communicator.handle_download_folder_request_group,
+                            args=(folder_name, self.save_path, self.get_current_folder()))
+                        receive_thread.start()
+            else:
+                # Otherwise, handle file downloads
+                receive_thread = threading.Thread(
+                    target=self.group_communicator.handle_download_request_group,
+                    args=(select_file_names_lst, self.save_path, self.get_current_folder()))
+                receive_thread.start()
+        finally:
+            self.presenting_files_event.clear()
+
+    def handle_saving_broadcasted_files(self, file_data_name_dict):
+        try:
+            if self.presenting_files_event.is_set():
+                print("A process is already running. Please wait.")
+                return
+            self.presenting_files_event.set()
+
+            for indiv_filename, indiv_filebytes in file_data_name_dict.items():
+                file_path = os.path.join(self.save_path, indiv_filename)
+                with open(file_path, "wb") as file:
+                    file.write(indiv_filebytes)
+                    print(f"File '{indiv_filename}' received successfully.")
+        finally:
+            self.presenting_files_event.clear()
 
     def handle_delete_request_group(self):
-        if not self.can_delete() and self.is_admin is False:
-            print("You are not authorized to delete data.")
-            tk.messagebox.showinfo(title="Error", message="You are not authorized to delete data.")
-            return
-        frames_to_delete = self.get_checked_file_frames()
-        names_to_delete_lst = []
-        folders_to_delete_lst = []
+        try:
+            if self.presenting_files_event.is_set():
+                print("A process is already running. Please wait.")
+                return
+            self.presenting_files_event.set()
 
-        for file_frame in frames_to_delete:
-            if file_frame.is_folder:
-                folders_to_delete_lst.append(file_frame.get_filename() + " <folder>")
-            else:
-                names_to_delete_lst.append(file_frame.get_filename())
+            if not self.can_delete() and self.is_admin is False:
+                print("You are not authorized to delete data.")
+                tk.messagebox.showinfo(title="Error", message="You are not authorized to delete data.")
+                return
+            frames_to_delete = self.get_checked_file_frames()
+            names_to_delete_lst = []
+            folders_to_delete_lst = []
 
-        print(f"names_to_delete_lst: {names_to_delete_lst}")
-        print(f"folders_to_delete_lst: {folders_to_delete_lst}")
+            for file_frame in frames_to_delete:
+                if file_frame.is_folder:
+                    folders_to_delete_lst.append(file_frame.get_filename() + " <folder>")
+                else:
+                    names_to_delete_lst.append(file_frame.get_filename())
 
-        delete_thread = threading.Thread(
-            target=self.group_communicator.handle_delete_request_group,
-            args=(names_to_delete_lst, folders_to_delete_lst, self.get_current_folder())
-        ).start()
+            print(f"names_to_delete_lst: {names_to_delete_lst}")
+            print(f"folders_to_delete_lst: {folders_to_delete_lst}")
 
-        for file_frame in frames_to_delete:
-            file_frame.kill_frame()
+            delete_thread = threading.Thread(
+                target=self.group_communicator.handle_delete_request_group,
+                args=(names_to_delete_lst, folders_to_delete_lst, self.get_current_folder())
+            ).start()
 
-        self.file_frame_counter = len(self.group_file_frames)
+            for file_frame in frames_to_delete:
+                file_frame.kill_frame()
+
+            self.file_frame_counter = len(self.group_file_frames)
+        finally:
+            self.presenting_files_event.clear()
 
     def handle_rename_request_group(self):
         try:
+            if self.presenting_files_event.is_set():
+                print("A process is already running. Please wait.")
+                return
+            self.presenting_files_event.set()
+
             if not self.can_rename() and self.is_admin is False:
                 print("You are not authorized to rename data.")
                 tk.messagebox.showinfo(title="Error", message="You are not authorized to rename data.")
@@ -644,6 +766,9 @@ class GroupsPage(ttk.Frame):
         except IndexError:
             pass
 
+        finally:
+            self.presenting_files_event.clear()
+
     def set_handle_broadcast_requests_function(self):
         self.group_communicator.handle_broadcast_requests = self.handle_broadcast_requests
 
@@ -660,12 +785,7 @@ class GroupsPage(ttk.Frame):
 
             if protocol_flag == "<SEND>":
                 for item in received_data:
-                    print(f"item: {item}")
-                    owner, name, size, date, group_name, folder = item
-                    formatted_date = self.set_date_format(pickle.loads(date))
-                    formatted_size = self.set_size_format(size)
-                    self.add_file_frame(name, formatted_size, formatted_date,
-                                        owner, 0)
+                    self.handle_received_item(item, current_folder)
 
             elif protocol_flag == "<NARF>":
                 self.handle_presenting_presaved_files(received_data)
@@ -674,7 +794,7 @@ class GroupsPage(ttk.Frame):
                 self.get_and_destroy_checked_file_names(received_data)
 
             elif protocol_flag == "<RECV>":
-                self.handle_saving_broadcasted_files(received_data, self.save_path)
+                self.handle_saving_broadcasted_files(received_data)
 
             elif protocol_flag == "<RENAME>":
                 self.get_file_name_to_rename(received_data)
@@ -775,7 +895,7 @@ class GroupsPage(ttk.Frame):
 
                     count += 1
 
-                self.handle_add_new_folder_request(os.path.basename(folder_path) + " <folder>", 0)
+                self.handle_add_new_folder_request(os.path.basename(folder_path) + " <folder>")
 
         except FileNotFoundError:
             return
@@ -820,7 +940,6 @@ class GroupsPage(ttk.Frame):
         self.current_folder = search_query
         threading.Thread(target=self.group_communicator.handle_search_request, args=(search_query,)).start()
 
-
     def display_search_results(self, search_results):
         for file_frame in self.group_file_frames:
             file_frame.destroy()
@@ -837,6 +956,7 @@ class GroupsPage(ttk.Frame):
             else:
                 self.add_file_frame(fname.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner,
                                     favorite)
+
     def create_new_folder(self, recived_data):
         owner, name, size, date, groupName, folder = recived_data
         formatted_date = self.set_date_format(pickle.loads(date))
