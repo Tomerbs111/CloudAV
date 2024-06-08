@@ -664,20 +664,8 @@ class GroupCommunication:
         :param file_folder: Folder for the files.
         """
         try:
-            data_dict = {"FLAG": '<RECV>', "DATA": [select_file_names_lst, file_folder]}
+            data_dict = {"FLAG": '<RECV>', "DATA": {file_folder: select_file_names_lst}}
             self.send_data(self.client_socket, pickle.dumps(data_dict))
-
-            if self.running:  # Check if data will end up in broadcast
-                return
-
-            received_data = pickle.loads(self.recv_data(self.client_socket))
-            file_data_name_dict = received_data.get("DATA")
-
-            for indiv_filename, indiv_filebytes in file_data_name_dict.items():
-                file_path = os.path.join(save_path, indiv_filename)
-                with open(file_path, "wb") as file:
-                    file.write(indiv_filebytes)
-                    print(f"File '{indiv_filename}' received successfully.")
 
         except Exception as e:
             print(f"Error in receive_checked_files: {e}")

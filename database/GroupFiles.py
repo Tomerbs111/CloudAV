@@ -221,13 +221,20 @@ class GroupFiles:
         - folder (str): Folder of the file.
 
         Returns:
-        - bytes: Data of the file.
+        - bytes or None: Data of the file, or None if not found.
         """
         try:
             result = self._execute_query(self.GET_FILE_DATA_QUERY, (group_name, self.owner_id, name, folder))
-            return result[0]
+            if result:
+                # Extract the BLOB data from the tuple
+                blob_data = result[0][0]
+                return blob_data
+            else:
+                print("File data not found.")
+                return None
         except Exception as e:
             print("An error occurred while retrieving file data:", e)
+            return None  # or raise a specific exception
 
     def rename_file(self, group_name: str, old_name: str, new_name: str, folder: str):
         """
@@ -362,4 +369,4 @@ class GroupFiles:
 
 if __name__ == '__main__':
     asf = GroupFiles('jasaxaf511@fincainc.com')
-    print(asf.get_file_info('daftpunk enjoyer','MetaMask.txt','daftpunk enjoyer'))
+    print(asf.get_file_data('daftpunk enjoyer','echo fart sound effect (no copyright).mp3','daftpunk enjoyer'))

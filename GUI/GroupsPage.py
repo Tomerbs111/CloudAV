@@ -674,25 +674,17 @@ class GroupsPage(ttk.Frame):
                 # Otherwise, handle file downloads
                 receive_thread = threading.Thread(
                     target=self.group_communicator.handle_download_request_group,
-                    args=(select_file_names_lst, self.save_path, self.get_current_folder()))
+                    args=(select_file_names_lst, self.save_path, self.current_folder))
                 receive_thread.start()
         finally:
             self.presenting_files_event.clear()
 
     def handle_saving_broadcasted_files(self, file_data_name_dict):
-        try:
-            if self.presenting_files_event.is_set():
-                print("A process is already running. Please wait.")
-                return
-            self.presenting_files_event.set()
-
-            for indiv_filename, indiv_filebytes in file_data_name_dict.items():
-                file_path = os.path.join(self.save_path, indiv_filename)
-                with open(file_path, "wb") as file:
-                    file.write(indiv_filebytes)
-                    print(f"File '{indiv_filename}' received successfully.")
-        finally:
-            self.presenting_files_event.clear()
+        for indiv_filename, indiv_filebytes in file_data_name_dict.items():
+            file_path = os.path.join(self.save_path, indiv_filename)
+            with open(file_path, "wb") as file:
+                file.write(indiv_filebytes)
+                print(f"File '{indiv_filename}' received successfully.")
 
     def handle_delete_request_group(self):
         try:
@@ -769,7 +761,7 @@ class GroupsPage(ttk.Frame):
                 rename_thread.start()
 
                 # Update the UI
-                file_frame.set_filename(new_name if file_frame.is_folder else new_name)
+                file_frame.set_filename(new_name_with_format if file_frame.is_folder else new_name_with_format)
                 file_frame.update_idletasks()
         except IndexError:
             pass

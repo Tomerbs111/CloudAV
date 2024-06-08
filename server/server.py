@@ -517,22 +517,20 @@ class Server:
 
     def handle_receive_files_action(self, client_socket, db_manager, recv_data, aes_key):
         try:
-            select_file_names_lst = recv_data[0]
-            print(select_file_names_lst)
-            folder_name = recv_data[1]
             file_data_name_dict = {}
-            if isinstance(db_manager, GroupFiles):
-                for individual_file in select_file_names_lst:
-                    file_data = \
-                        db_manager.get_file_data(self.get_group_name(client_socket), individual_file, folder_name)
-                    file_data_name_dict[individual_file] = file_data
+            for folder_name, select_file_names_lst in recv_data.items():
+                if isinstance(db_manager, GroupFiles):
+                    for individual_file in select_file_names_lst:
+                        file_data = db_manager.get_file_data(self.get_group_name(client_socket), individual_file,
+                                                             folder_name)
+                        file_data_name_dict[individual_file] = file_data
 
-            elif isinstance(db_manager, UserFiles):
-                for individual_file in select_file_names_lst:
-                    file_data = db_manager.get_file_data(individual_file, folder_name)[0]
-                    file_data_name_dict[individual_file] = file_data
+                elif isinstance(db_manager, UserFiles):
+                    for individual_file in select_file_names_lst:
+                        file_data = db_manager.get_file_data(individual_file, folder_name)[0]
+                        file_data_name_dict[individual_file] = file_data
 
-            data_dict = {"FLAG": '<RECV>', "DATA": file_data_name_dict}
+            data_dict = {"FLAG": '<RECV>', "DATA": file_data_name_dict, "CURRENT_FOLDER": folder_name}
             self.send_data(client_socket, pickle.dumps(data_dict), aes_key)
 
             print("Files sent successfully.")
