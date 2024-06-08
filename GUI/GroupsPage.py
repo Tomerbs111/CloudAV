@@ -474,18 +474,26 @@ class GroupsPage(ttk.Frame):
                 file_frame.set_filename(new_name)
                 file_frame.update_idletasks()
 
-    def handle_received_item(self, item, current_folder):
-        owner, name, size, date, group_name, folder, favorite = item
-        formatted_file_date = self.set_date_format(date)
-        formatted_file_size = self.set_size_format(size)
-        if folder == current_folder:
-            if " <folder>" in name:
-                formatted_file_size = str(size) + " items"
-                self.add_folder_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner,
-                                      favorite)
-            else:
-                self.add_file_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner,
-                                    favorite)
+    def handle_received_item(self, item):
+        try:
+            if self.presenting_files_event.is_set():
+                print("A process is already running. Please wait.")
+                return
+            self.presenting_files_event.set()
+            owner, name, size, date, group_name, folder, favorite = item
+            formatted_file_date = self.set_date_format(date)
+            formatted_file_size = self.set_size_format(size)
+            if folder == self.get_current_folder():
+                if " <folder>" in name:
+                    formatted_file_size = str(size) + " items"
+                    self.add_folder_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner,
+                                          favorite)
+                else:
+                    self.add_file_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_file_date, owner,
+                                        favorite)
+
+        finally:
+            self.presenting_files_event.clear()
 
     def folder_clicked(self, folder_name):
         try:
@@ -563,7 +571,7 @@ class GroupsPage(ttk.Frame):
             if narf_answer == "<NO_DATA>":
                 return
             for individual_file in narf_answer:
-                self.handle_received_item(individual_file, self.current_folder)
+                self.handle_received_item(individual_file)
         finally:
             self.presenting_files_event.clear()
 
@@ -785,7 +793,7 @@ class GroupsPage(ttk.Frame):
 
             if protocol_flag == "<SEND>":
                 for item in received_data:
-                    self.handle_received_item(item, current_folder)
+                    self.handle_received_item(item)
 
             elif protocol_flag == "<NARF>":
                 self.handle_presenting_presaved_files(received_data)
@@ -807,7 +815,7 @@ class GroupsPage(ttk.Frame):
             elif protocol_flag == "<RECV_FOLDER>":
                 self.handle_save_folder(received_data)
 
-            elif protocol_flag == "<CREATE_FOLDER>":
+            elif protocol_flag == "<CREATE_FOLDER_GROUP>":
                 self.create_new_folder(received_data)
 
 
@@ -958,9 +966,9 @@ class GroupsPage(ttk.Frame):
                                     favorite)
 
     def create_new_folder(self, recived_data):
-        owner, name, size, date, groupName, folder = recived_data
-        formatted_date = self.set_date_format(pickle.loads(date))
+        owner, name, size, date, group_name, folder, favorite = recived_data[0]
+        formatted_date = self.set_date_format(date)
         formatted_file_size = self.set_size_format(size)
         formatted_file_size = str(size) + " items"
         if folder == self.get_current_folder():
-            self.add_folder_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_date, owner, 0)
+            self.add_folder_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_date, owner, favorite)

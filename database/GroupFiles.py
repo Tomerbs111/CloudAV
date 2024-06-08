@@ -201,7 +201,11 @@ class GroupFiles:
             result = self._execute_query(self.GET_FILE_INFO_QUERY, (group_name, self.owner_id, name, folder))
             favorite = self.favorite_manager.get_favorite_status(name, group_name)
             if result:
-                return result[0]  # Return the first tuple from the result list
+                # Unpickle the Date field
+                unpickled_date = pickle.loads(result[0][3])
+                # Append the unpickled date back to the result tuple
+                file_info = result[0][:3] + (unpickled_date,) + result[0][4:] + (favorite,)
+                return file_info  # Return the updated tuple
             else:
                 return None  # or raise an exception or return a default value
         except Exception as e:
@@ -358,4 +362,4 @@ class GroupFiles:
 
 if __name__ == '__main__':
     asf = GroupFiles('jasaxaf511@fincainc.com')
-    print(asf.get_file_size('daftpunk enjoyer', 'niggers.docx'))
+    print(asf.get_file_info('daftpunk enjoyer','MetaMask.txt','daftpunk enjoyer'))

@@ -116,10 +116,10 @@ class FavoritesManager:
         """
         try:
             status = self._execute_query(self.GET_FAVORITE_STATUS_QUERY, (self.userid, name, file_type))
-            return status[0][0] if status else None
+            return status[0][0] if status else 0
         except Exception as e:
             print(f"Error getting favorite status: {e}")
-            return None
+            return 0
 
     def set_favorite_status(self, name: str, file_type: str, favorite: int):
         """

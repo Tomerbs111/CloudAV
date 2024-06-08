@@ -482,7 +482,7 @@ class Server:
                 group_name = create_folder_data[4]
                 db_manager.insert_file(folder_name, folder_size, folder_date, group_name, folder_folder, folder_bytes)
                 folder_info = db_manager.get_file_info(group_name, folder_name, folder_folder)
-                queued_info = {"FLAG": "<SEND>", "DATA": [folder_info], "CURRENT_FOLDER": folder_folder}
+                queued_info = {"FLAG": '<CREATE_FOLDER_GROUP>', "DATA": [folder_info], "CURRENT_FOLDER": folder_folder}
 
                 self.file_queue.put((client_socket, queued_info, group_name))
         except Exception as e:
@@ -500,7 +500,7 @@ class Server:
             if isinstance(db_manager, GroupFiles):
                 group_name = self.get_group_name(client_socket)
                 db_manager.insert_file(file_name, file_size, file_date, group_name, file_folder, file_bytes)
-                file_info = self.get_file_info(db_manager, group_name, file_name, file_folder)
+                file_info = db_manager.get_file_info(group_name, file_name, file_folder)
                 print(f"File info: {file_info}")
                 queued_info = {"FLAG": "<SEND>", "DATA": [file_info], "CURRENT_FOLDER": file_folder}
 
@@ -899,12 +899,6 @@ class Server:
 
     import pyotp
 
-    def get_file_info(self, group_manager, group_name, filename, file_folder):
-        try:
-            return group_manager.get_file_info(group_name, filename, file_folder)
-        except Exception as e:
-            print(f"Error getting file info: {e}")
-            return None
 
     def get_group_name(self, client_socket):
         try:
