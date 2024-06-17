@@ -655,14 +655,13 @@ class HomePage(ttk.Frame):
 
                         favorite = 0
 
-                self.handle_add_new_folder_request(os.path.basename(folder_path) + " <folder>",
-                                                   len(os.listdir(folder_path)))
+                self.handle_add_new_folder_request(os.path.basename(folder_path) + " <folder>", len(os.listdir(folder_path)))
 
         except FileNotFoundError:
             return
 
     def get_all_registered_users(self):
-        return self.client_communicator.get_all_registered_users()
+        return self.client_communicator.get_all_registered_users(self.get_current_folder())
 
     def get_all_groups(self):
         return self.client_communicator.get_all_groups()

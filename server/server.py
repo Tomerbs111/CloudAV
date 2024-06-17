@@ -268,7 +268,8 @@ class Server:
                                                        unfavorite_data)
 
                 elif received_data.get("FLAG") == "<GET_USERS>":
-                    self.handle_get_users_action(client_socket, identifier, aes_key)
+                    current_folder = received_data.get("DATA")
+                    self.handle_get_users_action(client_socket, identifier, aes_key, current_folder)
 
                 elif received_data.get("FLAG") == "<CREATE_GROUP>":
                     create_group_data = received_data.get("DATA")
@@ -346,7 +347,8 @@ class Server:
                     self.handle_unfavorite_file_action(client_socket, group_manager, favorite_manager, unfavorite_data)
 
                 elif received_data.get("FLAG") == "<GET_USERS>":
-                    self.handle_get_users_action(client_socket, identifier, aes_key)
+                    current_folder = received_data.get("DATA")
+                    self.handle_get_users_action(client_socket, identifier, aes_key, current_folder)
 
                 elif received_data.get("FLAG") == "<CREATE_GROUP>":
                     create_group_data = received_data.get("DATA")
@@ -689,11 +691,11 @@ class Server:
             print(f"Error in get all favorites action: {e}")
             client_socket.close()
 
-    def handle_get_users_action(self, client_socket, identifier, aes_key):
+    def handle_get_users_action(self, client_socket, identifier, aes_key, current_folder):
         try:
             all_users = AuthManager().get_all_users(identifier)
             print(f"this is all users {all_users}")
-            data_to_send = {"FLAG": "<GET_USERS>", "DATA": all_users}
+            data_to_send = {"FLAG": "<GET_USERS>", "DATA": all_users, "CURRENT_FOLDER": current_folder}
             self.send_data(client_socket, pickle.dumps(data_to_send), aes_key)
             print(f"Sent users list to the client.")
         except Exception as e:

@@ -217,7 +217,7 @@ class ClientCommunication:
             None
         """
         try:
-            data_dict = {"FLAG": '<RECV>', "DATA": [select_file_names_lst, file_folder]}
+            data_dict = {"FLAG": '<RECV>', "DATA": {file_folder : select_file_names_lst}}
             self.send_data(self.client_socket, pickle.dumps(data_dict))
 
             received_data = pickle.loads(self.recv_data(self.client_socket))
@@ -340,7 +340,7 @@ class ClientCommunication:
         except Exception as e:
             print(f"Error setting favorite: {e}")
 
-    def get_all_registered_users(self):
+    def get_all_registered_users(self, current_folder):
         """
         Retrieves all registered users from the server.
 
@@ -348,7 +348,7 @@ class ClientCommunication:
             all_users (list): List of all registered users.
         """
         try:
-            data_dict = {"FLAG": "<GET_USERS>"}
+            data_dict = {"FLAG": "<GET_USERS>", "DATA": current_folder}
             self.send_data(self.client_socket, pickle.dumps(data_dict))
 
             received_data = pickle.loads(self.recv_data(self.client_socket))
@@ -520,11 +520,11 @@ class GroupCommunication:
         decrypted_data = EncryptionFunctions.decrypt_AES_message(encrypted_data, self.aes_key)
         return decrypted_data
 
-    def get_all_registered_users(self):
+    def get_all_registered_users(self, current_folder):
         """
         Get all registered users and send the data through the client socket.
         """
-        data_dict = {"FLAG": '<GET_USERS>', "DATA": None}
+        data_dict = {"FLAG": '<GET_USERS>', "DATA": current_folder}
         self.send_data(self.client_socket, pickle.dumps(data_dict))
 
     def handle_create_group_request(self, group_name, group_participants):

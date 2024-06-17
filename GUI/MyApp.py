@@ -227,27 +227,40 @@ class Page(ttk.Frame):
                              args=(group_name,)).start()
 
         elif self.current_frame.group_name != group_name:
-            threading.Thread(target=self.current_frame.group_communicator.handle_leave_group_request).start()
-            print(f"Switching to {group_name}")
-            self.switch_frame("GroupsPage", self.communicator, group_name, permissions, room_admin)
-            threading.Thread(target=self.current_frame.group_communicator.handle_join_group_request,
-                             args=(group_name,)).start()
+            if not self.current_frame.check_is_process_runs():
+                threading.Thread(target=self.current_frame.group_communicator.handle_leave_group_request).start()
+                print(f"Switching to {group_name}")
+                self.switch_frame("GroupsPage", self.communicator, group_name, permissions, room_admin)
+                threading.Thread(target=self.current_frame.group_communicator.handle_join_group_request,
+                                 args=(group_name,)).start()
+            else:
+                print("A process is already running. Please wait.")
 
         self.current_frame.check_if_admin(self.user_email)
 
     def switch_to_home_page(self):
         self.user_username, self.user_email = self.get_user_info()
         if self.current_frame.__class__.__name__ == "GroupsPage":
-            threading.Thread(target=self.current_frame.group_communicator.handle_leave_group_request).start()
-        if self.current_frame.__class__.__name__ != "HomePage":
+            if not self.current_frame.check_is_process_runs():
+                threading.Thread(target=self.current_frame.group_communicator.handle_leave_group_request).start()
+                print("Switching to home page")
+                self.switch_frame("HomePage", self.communicator)
+            else:
+                print("A process is already running. Please wait.")
+        elif self.current_frame.__class__.__name__ != "HomePage":
             print("Switching to home page")
             self.switch_frame("HomePage", self.communicator)
 
     def switch_to_favorites_page(self):
         self.user_username, self.user_email = self.get_user_info()
         if self.current_frame.__class__.__name__ == "GroupsPage":
-            threading.Thread(target=self.current_frame.group_communicator.handle_leave_group_request).start()
-        if self.current_frame.__class__.__name__ != "FavoritesPage":
+            if not self.current_frame.check_is_process_runs():
+                threading.Thread(target=self.current_frame.group_communicator.handle_leave_group_request).start()
+                print("Switching to favorites page")
+                self.switch_frame("FavoritesPage", self.communicator, self.set_current_folder_child)
+            else:
+                print("A process is already running. Please wait.")
+        elif self.current_frame.__class__.__name__ != "FavoritesPage":
             print("Switching to favorites page")
             self.switch_frame("FavoritesPage", self.communicator, self.set_current_folder_child)
 

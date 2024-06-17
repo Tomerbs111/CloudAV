@@ -799,7 +799,7 @@ class GroupsPage(ttk.Frame):
             elif protocol_flag == "<RENAME>":
                 self.get_file_name_to_rename(received_data)
 
-            elif protocol_flag == "<GET_USERS>":
+            elif protocol_flag == '<GET_USERS>':
                 self.users_data = received_data
                 # Set the event flag to indicate that data is ready
                 self.users_data_event.set()
@@ -905,7 +905,7 @@ class GroupsPage(ttk.Frame):
         self.users_data_event.clear()
 
         # Call the function to request user data
-        threading.Thread(target=self.group_communicator.get_all_registered_users).start()
+        self.group_communicator.get_all_registered_users(self.get_current_folder())
 
         # Wait until the event is set (flag received)
         self.users_data_event.wait()
@@ -964,3 +964,7 @@ class GroupsPage(ttk.Frame):
         formatted_file_size = str(size) + " items"
         if folder == self.get_current_folder():
             self.add_folder_frame(name.replace(" <folder>", ""), formatted_file_size, formatted_date, owner, favorite)
+
+
+    def check_is_process_runs(self):
+        return self.presenting_files_event.is_set()
