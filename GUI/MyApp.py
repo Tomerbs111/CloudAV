@@ -15,21 +15,14 @@ class Page(ttk.Frame):
         super().__init__(master)
 
         self.create_group_top = None
-        self.f_user_groups = None
-        self.group_list_frame = None
-        self.f_options = None
         self.current_frame = None
         self.group_menu_frame = None
-        self.search_entry = None
         self.master = master
         self.switch_frame = switch_frame
         self.communicator = communicator
         self.current_frame = current_frame
 
         self.room_dictionary = {}
-
-        self.f_data_center = None
-        self.f_current_page = None
 
         self.user_username = None
         self.user_email = None
