@@ -77,8 +77,8 @@ class Page(ttk.Frame):
         self.f_options.pack(side="left", fill="y")
 
         cloudav_image = CTkImage(
-            light_image=Image.open(r"../GUI/file_icons/only_logo.png"),
-            dark_image=Image.open(r"../GUI/file_icons/only_logo.png"),
+            light_image=Image.open(r"../GUI/file_icons/only_logo_2.png"),
+            dark_image=Image.open(r"../GUI/file_icons/only_logo_2.png"),
             size=(75, 75))
         cav_image_lbl = CTkLabel(master=self.f_options, image=cloudav_image, text="")
         cav_image_lbl.pack(side="top", padx=10)

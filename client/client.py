@@ -217,7 +217,7 @@ class ClientCommunication:
             None
         """
         try:
-            data_dict = {"FLAG": '<RECV>', "DATA": {file_folder : select_file_names_lst}}
+            data_dict = {"FLAG": '<RECV>', "DATA": {file_folder: select_file_names_lst}}
             self.send_data(self.client_socket, pickle.dumps(data_dict))
 
             received_data = pickle.loads(self.recv_data(self.client_socket))
@@ -625,7 +625,8 @@ class GroupCommunication:
 
         print(f"Folder '{real_folder_name}' created successfully")
 
-    def handle_send_file_request(self, file_name, short_filename, short_file_date, file_size, file_folder, is_broadcast = False):
+    def handle_send_file_request(self, file_name, short_filename, short_file_date, file_size, file_folder,
+                                 is_broadcast=False):
         """
         Handle sending a file request by reading the file content, creating a data dictionary,
         and sending the data over a client socket using pickle.
@@ -653,7 +654,6 @@ class GroupCommunication:
 
         self.send_data(self.client_socket, pickle.dumps(data_dict))
         print(f"File '{file_name}' sent successfully")
-
 
     def handle_download_request_group(self, select_file_names_lst, save_path, file_folder):
         """
@@ -770,6 +770,7 @@ class GroupCommunication:
         self.current_folder = search_query
         data_dict = {"FLAG": "<SEARCH>", "DATA": search_query}
         self.send_data(self.client_socket, pickle.dumps(data_dict))
+
 
 # ------------Client setup------------
 HOST = '192.168.1.201'

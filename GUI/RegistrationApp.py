@@ -1,4 +1,3 @@
-
 import re
 import ttkbootstrap as ttk
 from customtkinter import *
@@ -186,30 +185,49 @@ class RegistrationApp(ttk.Frame):
     def setup_password(self, master, posx, posy):
         label_height = 0.05
         entry_height = 0.05
-        label_width = entry_width = 0.85  # Adjust as needed
+        label_width = entry_width = 0.74  # Adjust as needed
 
         l_password = ttk.Label(
             master=master,
             text="Password",
             font=("Calibri", 15),
             style="info"
-
         )
         l_password.place(relx=posx, rely=posy, relwidth=label_width, relheight=label_height)
 
         self.password_entry = ttk.Entry(
             master=master,
             width=60,  # Set the width based on the desired entry width
-            style="primary"
-
+            style="primary",
+            show="*"  # Hide the password by default
         )
         self.password_entry.place(relx=posx, rely=posy + label_height, relwidth=entry_width, relheight=entry_height)
         self.password_entry.insert(0, "01102006t")
+
         self.ans_password = ttk.Label(
             master=master,
             text="",
         )
         self.ans_password.place(relx=posx, rely=posy + 0.01 + label_height + entry_height)
+
+        self.show_password = False  # Variable to keep track of password visibility
+
+        self.toggle_button = CTkButton(
+            master=master,
+            text="Show",
+            command=self.toggle_password_visibility
+        )
+        self.toggle_button.place(relx=posx + entry_width + 0.01, rely=posy + label_height, relwidth=0.1,
+                                 relheight=entry_height)
+
+    def toggle_password_visibility(self):
+        if self.show_password:
+            self.password_entry.configure(show="*")
+            self.toggle_button.configure(text="Show")
+        else:
+            self.password_entry.configure(show="")
+            self.toggle_button.configure(text="Hide")
+        self.show_password = not self.show_password
 
     def setup_confirmation_label(self, master, posy):
         self.l_confirm = ttk.Label(
@@ -360,6 +378,7 @@ class RegistrationApp(ttk.Frame):
         self.l_confirm.configure(text="")
         self.twofapage_open = False
 
+
 class TwoFactorAuthentication(ttk.Toplevel):
     def __init__(self, master, client_communicator):
         super().__init__(master)
@@ -406,8 +425,18 @@ class TwoFactorAuthentication(ttk.Toplevel):
 
             # Bind the <Key> event to move the focus to the next digit_entry widget
             digit_entry.bind('<Key>', lambda event, entry=digit_entry, index=i: self.on_key(event, entry, index))
+            digit_entry.bind('<KeyPress-BackSpace>',
+                             lambda event, entry=digit_entry, index=i: self.on_backspace(event, entry, index))
 
             self.code_entries.append(digit_entry)
+
+    def on_backspace(self, event, entry, index):
+        # Delete the content of the current entry
+        entry.delete(0, 'end')
+
+        # Move focus to the previous entry, if it exists
+        if index > 0:
+            self.code_entries[index - 1].focus_set()
 
     def on_key(self, event, entry, index):
         if event.char.isdigit() and index < 5:
